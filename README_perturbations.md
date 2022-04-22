@@ -54,6 +54,8 @@ Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/
 Every AnnData object contains:
 
 - a column "perturbation" in `.obs`, indicating what gene or signaling pathway is perturbed.
+- The column "perturbation" must contain at least one entry "Control" indicating the control samples. OR maybe I will require a binary column in `.obs` containing "is_control". This is undecided.
 - A set "perturbed_but_not_measured_genes" in `uns`, containing all genes or pathways that are perturbed but not measured.
 - **???? This list of expectations is in progress.**
+- Expression in `.X` is expected to be on a log scale. 
 
