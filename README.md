@@ -1,3 +1,7 @@
+### Environments
+
+Currently, python code is run from a conda environment called `cell_type_grn_transfer`. See the benchmarking folder for more details. R code does not yet have a controlled environment.
+
 ### Using the perturbations
 
 This is a collection of uniformly formatted perturbation datasets. We offer R and Python code to quickly read and write from this collection. **This doesn't work yet but I hope to set it up soon!**
