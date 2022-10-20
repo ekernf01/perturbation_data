@@ -1,7 +1,10 @@
+from typing import Iterable
 import numpy as np 
 import pandas as pd 
 import h5py
 import scanpy as sc
+import anndata
+import typing 
 
 def simplify_categorical(x:pd.DataFrame, column: str, max_categories: int = 20, filler: str = "other", new_column: str = None):
     """Mark less frequent categories as other. Accepts and returns a dataframe."""
@@ -84,3 +87,41 @@ def read_cmap(expression_file, gene_metadata, instance_metadata):
     expression_quantified.var_names = expression_quantified.var["pr_gene_symbol"]
     return expression_quantified
 
+def describe_perturbation_effect(adata: anndata.AnnData, perturbation_type) -> anndata.AnnData:
+    """ Add details on perturbation effect on targeted genes
+
+    Args:
+        adata (anndata.AnnData): A perturbation dataset
+        perturbation_type (typing.Union): one of {"overexpression", "knockout", "knockdown"}, or if mixed, an iterable of length equal to n_samples.
+
+    Raises:
+        ValueError: Triggered by invalid perturbation types.
+
+    Returns:
+        anndata.AnnData: adata with columns filled in for 'expression_level_after_perturbation' and 'perturbation_type'
+    """
+    multiple_genes_hit = "perturbations_overlap" in adata.uns.keys() and adata.uns["perturbations_overlap"]
+    adata.obs["expression_level_after_perturbation"] = np.nan
+    adata.obs["perturbation_type"] = perturbation_type
+    def do_one_gene(p, g):
+        if g in adata.uns["perturbed_and_measured_genes"]:
+            if adata.obs.loc[p, "perturbation_type"] in {"overexpression", "knockdown"}:
+                return adata[p, g].X[0,0]
+            elif adata.obs.loc[p, "perturbation_type"] in {"knockout"}:
+                return 0
+            else:
+                raise ValueError("perturbation_type must be in 'overexpression', 'knockdown', 'knockout'")
+        else:
+            return np.nan
+
+    for p in adata.obs.query("~is_control").index:
+        gene_or_genes = adata.obs.loc[  p, "perturbation"]
+        if multiple_genes_hit:
+            elap = []
+            for g in gene_or_genes.split(","):
+                elap.append(do_one_gene(p, g))
+        else:
+            elap = do_one_gene(p, gene_or_genes)
+        adata.obs.loc[ p, "expression_level_after_perturbation"] = elap
+
+    return adata
