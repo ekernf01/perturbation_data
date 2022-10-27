@@ -6,8 +6,10 @@ This is a collection of uniformly formatted perturbation datasets. We offer R an
 
 This collection is not yet set up for deployment to non-Eric users. Main obstacles: 
 
-- The Python code is not pip-installable or conda-installable. But it's in this repo, and you can point `sys.path.append` to it.
+- The Python code is not pip-installable or conda-installable. But it's in this repo, and you can point `sys.path.append` to it. (see example usage below.)
 - The networks themselves are too big to put on GitHub. But they are on Patrick's AWS at `s3://cahanlab/eric.kernfeld/eric_laptop/research/projects/perturbation_prediction/cell_type_knowledge_transfer/perturbations/`. 
+
+Recommended installation: clone this repo, then find the actual datasets on AWS and place them manually in the `perturbations` directory. 
 
 ### Environments
 
