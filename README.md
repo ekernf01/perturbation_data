@@ -64,7 +64,9 @@ Metadata answering those questions are stored in `perturbations/perturbations.cs
 
 Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/latest/index.html) objects in `train.h5ad` and `test.h5ad`. Some may lack separate training data, having only `test.h5ad`. You will need to create your own train/test split by splitting the test data. When there is a separate training dataset, it will usually come from the same biological system or set of cell types as the test data, but it will lack perturbations and it may have more interesting temporal structure than the test data. 
 
-Every AnnData object conforms to certain expectations. This list is in progress and the README may be out of date; look at the function `check_perturbation_dataset` in `setup/ingestion.py` for authoritative details.
+### Adding new datasets and setting clear expectations
+
+Every AnnData object conforms to certain expectations. This list is in progress and the README may be out of date; look at the function `check_perturbation_dataset` in `setup/ingestion.py` for authoritative details. To add new datasets or alter ingestion of a current dataset, look at the notebooks in `setup.py` for examples, and ensure that the result ultimately passes the assertions done by `check_perturbation_dataset`. 
 
 - A column `"perturbation"` in `.obs`, dtype `str`, indicating what gene or geness are perturbed (e.g. `"FOXN1"` or `"FOXN1,PAX9"`).
 - A boolean column in `.obs` called `"is_control"`, with the obvious meaning
