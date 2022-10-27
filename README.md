@@ -1,10 +1,17 @@
+### Using the perturbations
+
+This is a collection of uniformly formatted perturbation datasets. We offer R and Python code to quickly read and write from this collection. **The R code doesn't exist yet but the Python does.** 
+
+### Installation
+
+This collection is not yet set up for deployment to non-Eric users. Main obstacles: 
+
+- The Python code is not pip-installable or conda-installable. But it's in this repo, and you can point `sys.path.append` to it.
+- The networks themselves are too big to put on GitHub. But they are on Patrick's AWS at `s3://cahanlab/eric.kernfeld/eric_laptop/research/projects/perturbation_prediction/cell_type_knowledge_transfer/networks/`. 
+
 ### Environments
 
 Currently, python code is run from a conda environment called `cell_type_grn_transfer`. See the benchmarking folder for more details. R code does not yet have a controlled environment.
-
-### Using the perturbations
-
-This is a collection of uniformly formatted perturbation datasets. We offer R and Python code to quickly read and write from this collection. **This doesn't work yet but I hope to set it up soon!**
 
 In R:
 
