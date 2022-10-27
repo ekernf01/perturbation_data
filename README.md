@@ -4,7 +4,7 @@ Currently, python code is run from a conda environment called `cell_type_grn_tra
 
 ### Using the perturbations
 
-This is a collection of uniformly formatted perturbation datasets. We offer R and Python code to quickly read and write from this collection. **This doesn't work yet but I hope to set it up soon!**
+This is a collection of uniformly formatted perturbation datasets. We offer R and Python code to quickly read and write from this collection. **Implemented in python but not yet in R.**
 
 In R:
 
@@ -15,7 +15,7 @@ options(PERTURBATION_PATH = "perturbations")
 # What datasets are available?
 View(load_perturbation_metadata())
 # Grab one
-nakatake_et_al = load_perturbation("psc_overexpression") 
+nakatake_et_al = load_perturbation("nakatake") 
 ```
 
 In Python:
@@ -29,7 +29,7 @@ os.environ["PERTURBATION_PATH"] = "perturbations"
 # What datasets are available?
 load_perturbations.load_perturbation_metadata()
 # Grab one
-nakatake_et_al = load_perturbations.load_perturbation("psc_overexpression") 
+nakatake_et_al = load_perturbations.load_perturbation("nakatake") 
 ```
 
 ### Layout
@@ -41,7 +41,7 @@ nakatake_et_al = load_perturbations.load_perturbation("psc_overexpression")
 
 ### About the datasets 
 
-The main commonality among these data: they all measure the transcriptome, and every test dataset includes measurements after a genetic knockout or an overexpression experiment. The main differences among these datasets are:
+The two main commonalities among these data: they all measure the transcriptome, and every test dataset includes measurements after a genetic knockout or an overexpression experiment. The main differences among these datasets are:
 
 - What lab or project did they come from?
 - What organism are they in?
@@ -55,11 +55,12 @@ Metadata answering those questions are stored in `perturbations/perturbations.cs
 
 Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/latest/index.html) objects in `train.h5ad` and `test.h5ad`. Some may lack separate training data, having only `test.h5ad`. You will need to create your own train/test split by splitting the test data. When there is a separate training dataset, it will usually come from the same biological system or set of cell types as the test data, but it will lack perturbations and it may have more interesting temporal structure than the test data. 
 
-Every AnnData object contains:
+Every AnnData object conforms to certain expectations. This list is in progress and the README may be out of date; look at the function `check_perturbation_dataset` in `setup/ingestion.py` for authoritative details.
 
-- a column "perturbation" in `.obs`, indicating what gene or signaling pathway is perturbed.
-- The column "perturbation" must contain at least one entry "Control" indicating the control samples. OR maybe I will require a binary column in `.obs` containing "is_control". This is undecided.
-- A set "perturbed_but_not_measured_genes" in `uns`, containing all genes or pathways that are perturbed but not measured.
-- **???? This list of expectations is in progress.**
-- Expression in `.X` is expected to be on a log scale. 
-
+- A column `"perturbation"` in `.obs`, dtype `str`, indicating what gene or geness are perturbed (e.g. `"FOXN1"` or `"FOXN1,PAX9"`).
+- A boolean column in `.obs` called `"is_control"`, with the obvious meaning
+- An iterable `"perturbed_but_not_measured_genes"` in `uns`, containing all genes or pathways that are perturbed but not measured.
+- An iterable `"perturbed_and_measured_genes"` in `uns`, containing all genes or pathways that are perturbed and also measured.
+- Expression in `.X` should be normalized and log-transformed. 
+- Raw data should be present in `raw`.
+ 
