@@ -139,68 +139,6 @@ def describe_perturbation_effect(adata: anndata.AnnData, perturbation_type) -> a
     return adata
 
 
-def checkConsistency(adata: anndata.AnnData, 
-                     perturbationType: str="overexpression", 
-                     group: str=None,
-                     verbose: bool=False):
-    """ Check whether the gene that was perturbed is actually 
-    measured to be higher (if overexpressed) or lower (if knocked
-    down) or nearly zero (if knocked off).
-    If a perturbagen is a control or is not measured, 'N/A' is labeled. 
-    If a perturbagen's expression is higher or lower than all 
-    control groups (matching the direction of intended perturbation),
-    True is labeled; otherwise, False is labeled.
-    
-    Args:
-        adata (anndata.AnnData): the object to operate on.
-        perturbation_type (str): one of {"overexpression", "knockout", "knockdown"}
-        group (str, default None): a column in adata.obs to indicate sub-group of
-                                   the treatment and the control.
-        verbose (bool): show a swarmplot noting the difference between the control
-                        and the treatment, if the perturbation direction and expression
-                        level are disconcordant.
-    """
-    assert perturbationType in ["overexpression", "knockout", "knockdown"]
-    
-    tmmNormX     = tmmNormalization(adata.X.T).T
-    controlIndex = np.where(adata.obs.is_control)[0]
-    control      = tmmNormX[controlIndex, :]
-    consistencyStatus = np.full((adata.n_obs), "Yes")
-    for row, perturbagen in sorted(enumerate(adata.obs.perturbation), key=lambda x: x[1]):
-        if (adata.obs.is_control[row] or perturbagen not in adata.var.index):
-            consistencyStatus[row] = "NA"
-            continue
-        loc = np.where(adata.var.index == perturbagen)[0]
-        assert loc.shape[0] == 1
-        
-        if group:        # Only compare treatment to within-group controls (to limit variability)
-            assert group in adata.obs.columns
-            control = tmmNormX[adata.obs.is_control & (adata.obs[group] == adata.obs[group][row]), :]
-            
-        if perturbationType == "overexpression" and all(tmmNormX[row, loc] > control[:, loc]):
-            continue
-        if perturbationType == "knockdown"      and all(tmmNormX[row, loc] < control[:, loc]):
-            continue
-        if perturbationType == "knockout"       and abs(tmmNormX[row, loc]) < 1e-3:
-            continue
-        consistencyStatus[row] = "No"  
-        
-        if verbose:
-            plt.figure(figsize=(4,1))
-            g = sns.swarmplot(control[:, loc].flatten(), orient='h', label="control")
-            g.axvline(tmmNormX[row, loc], 0, 1, color='red', label="treatment", lw=1)
-            g.legend()
-            plt.title(f"{perturbagen} {perturbationType}")
-            plt.show()
-            
-            # print(f"{perturbagen:>10}:   Control expr is {control[:, loc].flatten()}, and" + 
-            #       f"\n{'':>11} perturbed expr is {tmmNormX[row, loc]} after **{perturbationType}** " + 
-            #       f"(all expr are TMM normalized).\n")
-            # Here is metadata for this observation \n{adata.obs.iloc[row]}")
-
-    return consistencyStatus
-
-
 def tmmNormalization(matrix, trim_fold_change=0.3, trim_abs_expr=0.05):
     """
     Trimmed mean of M-values normalization
@@ -258,10 +196,88 @@ def tmmNormalization(matrix, trim_fold_change=0.3, trim_abs_expr=0.05):
     return matrix / tmm_factor
 
 
+def checkConsistency(adata: anndata.AnnData, 
+                     perturbationType: str="overexpression", 
+                     group: str=None,
+                     verbose: bool=False):
+    """ Check whether the gene that was perturbed is actually 
+    measured to be higher (if overexpressed) or lower (if knocked
+    down) or nearly zero (if knocked off).
+    If a perturbagen is a control or is not measured, 'N/A' is labeled. 
+    If a perturbagen's expression is higher or lower than all 
+    control groups (matching the direction of intended perturbation),
+    True is labeled; otherwise, False is labeled.
+    
+    Args:
+        adata (anndata.AnnData): the object to operate on.
+        perturbation_type (str): one of {"overexpression", "knockout", "knockdown"}
+        group (str, default None): a column in adata.obs to indicate sub-group of
+                                   the treatment and the control.
+        verbose (bool): show a swarmplot noting the difference between the control
+                        and the treatment, if the perturbation direction and expression
+                        level are disconcordant.
+    """
+    def visualizeLogFC(fc):
+        validLogFC = fc[fc != -999]
+        rangeMin = np.floor(np.min(validLogFC))
+        rangeMax = np.ceil (np.max(validLogFC))
+        plt.figure(figsize=(4,2.5))
+        plt.hist(validLogFC, 
+                 bins=np.linspace(rangeMin, 
+                                  rangeMax, 
+                                  int((rangeMax-rangeMin)*3+1)), 
+                 label="Per Trial")
+        plt.axvline(0, 0, 1, color='red', label="No Change")
+        plt.xlabel("Log2 Fold Change (perturbed/control)")
+        plt.ylabel("Count")
+        plt.legend()
+        plt.show()
+        
+    
+    assert perturbationType in ["overexpression", "knockout", "knockdown"]
+    
+    tmmNormX     = tmmNormalization(adata.X.T).T
+    controlIndex = np.where(adata.obs.is_control)[0]
+    control      = tmmNormX[controlIndex, :]
+    logFC        = np.full((adata.n_obs), -999.0)
+    consistencyStatus = np.full((adata.n_obs), "Yes")
+    
+    for row, perturbagen in sorted(enumerate(adata.obs.perturbation), key=lambda x: x[1]):
+        if (adata.obs.is_control[row] or perturbagen not in adata.var.index):
+            consistencyStatus[row] = "NA"
+            continue
+        loc = np.where(adata.var.index == perturbagen)[0]
+        assert loc.shape[0] == 1
+        
+        if group:        # Only compare treatment to within-group controls (to limit variability)
+            assert group in adata.obs.columns
+            control = tmmNormX[adata.obs.is_control & (adata.obs[group] == adata.obs[group][row]), :]
+            
+        logFC[row] = np.log2(tmmNormX[row, loc[0]] / np.median(control[:, loc]))
+        
+        if perturbationType == "overexpression" and tmmNormX[row, loc] > np.median(control[:, loc]):
+            continue
+        if perturbationType == "knockdown"      and tmmNormX[row, loc] < np.median(control[:, loc]):
+            continue
+        if perturbationType == "knockout"       and abs(tmmNormX[row, loc]) < 1e-3:
+            continue
+        consistencyStatus[row] = "No"  
+        
+        if verbose:
+            plt.figure(figsize=(4,1))
+            g = sns.swarmplot(control[:, loc].flatten(), orient='h', label="control")
+            g.axvline(tmmNormX[row, loc], 0, 1, color='red', label="treatment", lw=1)
+            g.legend()
+            plt.title(f"{perturbagen} {perturbationType}")
+            plt.show()
+            
+    visualizeLogFC(logFC)
+    return consistencyStatus, logFC
+
+
 def computeCorrelation(adata: anndata.AnnData, 
                        verbose: bool=False, 
-                       group: str=None, 
-                       diagnostic=False):
+                       group: str=None):
     """
     Assume the existence of **is_control** in adata.obs. Compute the
     correlation between biological replica on scale of log fold change. For each 
@@ -270,96 +286,96 @@ def computeCorrelation(adata: anndata.AnnData,
     and control expression. Both Spearman and Pearson correlation are
     computed.
     """
+    
+    def computelogFC(t1, t2, c1, c2):
+        logFC1, logFC2 = np.log2(r1 / c1), np.log2(r2 / c2)
+        validGeneEntry = np.isfinite(logFC1) & np.isfinite(logFC2)
+        logFC1 = logFC1[validGeneEntry]
+        logFC2 = logFC2[validGeneEntry]
+        return spearmanr(logFC1, logFC2)[0], pearsonr (logFC1, logFC2)[0]
+    
+    
     tmmNormX = tmmNormalization(adata.X.T).T
     spearmanList = np.full(adata.n_obs, fill_value=-999, dtype=np.float64)
     pearsonList  = np.full(adata.n_obs, fill_value=-999, dtype=np.float64)
-    
-    # All control expressions
     controlExpr  = tmmNormX[adata.obs.is_control, :]
     
     for perturbagen in set(adata[~adata.obs.is_control].obs.perturbation):
         
         # All perturbation expressions
         replicaRow  = np.where(adata.obs.perturbation == perturbagen)[0]
-        # replicaExpr = tmmNormX[replicaRow, :]
-        
-        # Don't compute corr for control or perturbation w/o replication
-        if replicaRow.shape[0] == 1:
+        if replicaRow.shape[0] == 1:        # skip perturbation w/o replication
             continue
         
-        def computelogFC(t1, t2, c1, c2, diagnostic=False):
-            logFC1, logFC2 = np.log(r1 / c1), np.log(r2 / c2)
-            validGeneEntry = np.isfinite(logFC1) & np.isfinite(logFC2)
-            logFC1 = logFC1[validGeneEntry]
-            logFC2 = logFC2[validGeneEntry]
-            if diagnostic:
-                plt.scatter(logFC1, logFC2, s=1, label=temp1[-1])
-                plt.legend()
-                plt.show()
-                print(sum(validGeneEntry))
-            return spearmanr(logFC1, logFC2)[0], pearsonr (logFC1, logFC2)[0]
-
         temp1, temp2 = list(), list()
         for (row1, row2) in it.combinations(replicaRow, 2):
-            r1 = tmmNormX[row1, :]
-            r2 = tmmNormX[row2, :]
-
-            if group:       # Only compare treatment to within-group controls (to limit variability)
+            r1, r2 = tmmNormX[row1, :], tmmNormX[row2, :]
+            if group:
                 assert group in adata.obs.columns
-                controlExpr1 = tmmNormX[(adata.obs.is_control) & 
-                                        (adata.obs[group] == adata.obs[group][row1]), :]
-                controlExpr2 = tmmNormX[(adata.obs.is_control) & 
-                                        (adata.obs[group] == adata.obs[group][row2]), :]
-                for (c1, c2) in it.product(controlExpr1, controlExpr2):
-                    s, p = computelogFC(r1, r2, c1, c2, diagnostic)
-                    temp1.append(s)
-                    temp2.append(p)
+                g1, g2 = adata.obs[group][row1], adata.obs[group][row2]
+                c1 = np.median(tmmNormX[(adata.obs.is_control) & (adata.obs[group] == g1), :], axis=0)
+                c2 = np.median(tmmNormX[(adata.obs.is_control) & (adata.obs[group] == g2), :], axis=0)
+                s, p = computelogFC(r1, r2, c1, c2)
             else:
-                for c1 in controlExpr:
-                    s, p = computelogFC(r1, r2, c1, c1, diagnostic)
-                    temp1.append(s)
-                    temp2.append(p)                
-            
-        # print(sorted(temp1))
-        
-            
-        # Compute correlation score all pair-wise combinations
-        # temp1, temp2 = list(), list()
-        # for (r1, r2) in it.combinations(replicaExpr, 2):
-        #     for c in controlExpr:
-        #         logFC1, logFC2 = np.log(r1 / c), np.log(r2 / c)
-        #         validGeneEntry = np.isfinite(logFC1) & np.isfinite(logFC2)
-        #         logFC1 = logFC1[validGeneEntry]
-        #         logFC2 = logFC2[validGeneEntry]
-        #         temp1.append(spearmanr(logFC1, logFC2)[0])
-        #         temp2.append(pearsonr (logFC1, logFC2)[0])
+                c1 = np.median(controlExpr.copy(), axis=0)
+                s, p = computelogFC(r1, r2, c1, c1)
+            temp1.append(s)
+            temp2.append(p)                
         
         # Record the median values
         spearmanList[replicaRow] = np.median(temp1)
         pearsonList [replicaRow] = np.median(temp2)
             
     if verbose:
-        plotSpearman = spearmanList[spearmanList != -999]
-        plotPearson  = pearsonList [pearsonList  != -999]
+        corrVal = np.array([spearmanList, pearsonList]).flatten()[:, np.newaxis]
+        corrStr = np.array(["Spearman"] * len(spearmanList) + 
+                           ["Pearson" ] * len(pearsonList)).flatten()[:, np.newaxis]
+        
+        assert "consistentW/Perturbation" in adata.obs
+        assert "logFC" in adata.obs
 
-        fig, axes = plt.subplots(1,3, figsize=(8,3), width_ratios=[0.4, 0.1, 0.5])
-        axes[0].set_xlabel("Spearman Correlation")
-        axes[0].set_ylabel("Pearson Correlation")
-        axes[0].scatter(plotSpearman, plotPearson, s=1)
-        axes[1].remove()
+        status  = np.tile(adata.obs['consistentW/Perturbation'], 2)[:, np.newaxis]
+        logFC   = np.tile(adata.obs['logFC']                   , 2)[:, np.newaxis]
+        corrDF  = pd.DataFrame(np.hstack([corrVal, corrStr, logFC, status]), 
+                               columns=["Value", "Name", "logFC", "ConsistentW/Perturbation"])
+        corrDF[['Value']] = corrDF[['Value']].apply(pd.to_numeric)
+        corrDF[['logFC']] = corrDF[['logFC']].apply(pd.to_numeric)
+        delCol  = ((corrDF["Value"] == -999) | 
+                   (corrDF["ConsistentW/Perturbation"] == "NA") | 
+                   (corrDF["logFC"] == -999))
+        corrDF  = corrDF.loc[~delCol, :]
 
-        corrVal = np.array([plotSpearman, plotPearson]).flatten()[:, np.newaxis]
-        corrStr = np.array(["Spearman"] * len(plotSpearman) + 
-                           ["Pearson" ] * len(plotPearson)).flatten()[:, np.newaxis]
-        corrDf  = pd.DataFrame(np.hstack([corrVal, corrStr]), 
-                               columns=["Value", "Name"])
-        corrDf[['Value']] = corrDf[['Value']].apply(pd.to_numeric)
-        sns.violinplot(data=corrDf, 
+        fig, axes = plt.subplots(2,3, figsize=(10,7), width_ratios=[0.4, 0.1, 0.5])
+        axes[0,0].set_xlabel("Spearman Correlation")
+        axes[0,0].set_ylabel("Pearson Correlation")
+        axes[0,0].scatter(x=corrDF[corrDF["Name"] == "Spearman"].iloc[:,0], 
+                        y=corrDF[corrDF["Name"] == "Pearson" ].iloc[:,0], s=1)
+        
+        gs = axes[0, 2].get_gridspec()
+        axes[0, 1].remove()
+        axes[0, 2].remove()
+        axes[1, 1].remove()
+        axes[1, 2].remove()
+        axlong = fig.add_subplot(gs[:, -1])
+
+        sns.violinplot(data=corrDF, 
                        x="Value", 
                        y="Name", 
-                       ax=axes[2], 
-                       cut=0)
-        axes[1].set_xlabel("Correlation Scores")
+                       hue="ConsistentW/Perturbation", 
+                       split=False,
+                       cut=0,
+                       scale="count",
+                       ax=axlong)
+        axlong.set_xlabel("Correlation Scores")
+        
+        sns.scatterplot(data=corrDF[corrDF["Name"] == "Spearman"],
+                        x="Value",
+                        y="logFC",
+                        hue="ConsistentW/Perturbation", 
+                        # style="ConsistentW/Perturbation", 
+                        ax=axes[1,0])
+        axes[1,0].set_xlabel("Spearman Correlation")
+
         plt.show()
         
     return spearmanList, pearsonList
@@ -381,7 +397,7 @@ def thresholdByFoldChange(treatment: np.ndarray, control: np.ndarray):
     are positive and some are negative, we say that there is no change """
     fcThreshold = list()
     for idx in range(treatment.shape[1]):
-        fc = [np.log(t/c) for (t,c) 
+        fc = [np.log2(t/c) for (t,c) 
               in it.product(treatment[:,idx], 
                             control  [:,idx])]
         fc = np.array(fc)
@@ -428,7 +444,7 @@ def computeFoldChangeStats(treatment: np.ndarray, control: np.ndarray):
     are positive and some are negative, we say that there is no change """
     logFCStat = list()
     for idx in range(treatment.shape[1]):
-        fc = [np.log(t/c) for (t,c) 
+        fc = [np.log2(t/c) for (t,c) 
               in it.product(treatment[:,idx], 
                             control  [:,idx])]
         logFCStat.append(abs(np.median(fc)))
@@ -447,17 +463,17 @@ def calcMI(treatment: np.ndarray, control: np.ndarray, bins: int=100, verbose: b
     is computed. """
     miList = list()
     for (i,j) in it.product(treatment, control):        
-        c_xy = np.histogram2d(np.log(i), np.log(j), bins)[0]
+        c_xy = np.histogram2d(np.log2(i), np.log2(j), bins)[0]
         miList.append(mutual_info_score(None, None, contingency=c_xy))
         if verbose:
-            sns.heatmap(np.log(c_xy))
+            sns.heatmap(np.log2(c_xy))
             plt.show()
     return np.median(miList)
     
     
 def readFile(perturbs: list[str], variables: list, names: str, filename: str):
     """ Variables are 
-    ['deg', 'mi', 'mean', 'mse', 'median'] 
+    ['deg', 'mi', 'mean', 'norm2', 'median'] 
     Because running hundreds of thousands of ANOVA
     takes time, the results are saved in a file, 
     enabling resumption at any time. """
@@ -499,12 +515,12 @@ def quantifyEffect(adata, fname: str, group: str=None, diffExprFC=True) -> float
     perturbs = sorted(set(adata[~adata.obs.is_control].obs.perturbation))
     tmmNormX = tmmNormalization(adata.X.T).T
     control = tmmNormX[adata.obs.is_control, :]
-    names   = ["deg", "mi", "mean", "mse", "median"]
+    names   = ["deg", "mi", "mean", "norm2", "median"]
     metric  = [list() for i in range(len(names))]
     category= set(adata.obs[group]) if group else ["all"]
     
     # Load what's already computed, if any
-    (deg, mi, mean, mse, median) = readFile(perturbs, metric, names, fname)
+    (deg, mi, mean, norm2, median) = readFile(perturbs, metric, names, fname)
     
     for idx, p in enumerate(perturbs):
         
@@ -513,7 +529,7 @@ def quantifyEffect(adata, fname: str, group: str=None, diffExprFC=True) -> float
         treatment = tmmNormX[adata.obs.perturbation == p, :]
         
         # If missing values, re-compute
-        if -1 not in [deg[idx], mean[idx], mse[idx], median[idx], mi[idx]]:
+        if -1 not in [deg[idx], mean[idx], norm2[idx], median[idx], mi[idx]]:
             continue
         
         # If stratify by group, record each group and take the median across groups.
@@ -534,7 +550,7 @@ def quantifyEffect(adata, fname: str, group: str=None, diffExprFC=True) -> float
         fcThreshold = np.array(fcThreshold)
         fcThreshold = [fcThreshold[:, col] for col in range(fcThreshold.shape[1])]
         temp = [True if ( (all(pVal > 0) or all(pVal < 0)) and
-                          (np.min(np.abs(pVal)) > np.log(2)) ) 
+                          (np.min(np.abs(pVal)) > np.log2(2)) ) 
                 else False
                 for pVal 
                 in fcThreshold]
@@ -544,17 +560,17 @@ def quantifyEffect(adata, fname: str, group: str=None, diffExprFC=True) -> float
         deg   [idx] = sum(fcThreshold & pVThreshold) if diffExprFC else sum(pVThreshold)
         mean  [idx] = np.median([o[0] for o in outStat])
         median[idx] = np.median([o[1] for o in outStat])
-        mse   [idx] = np.median([o[2] for o in outStat])
+        norm2 [idx] = np.median([o[2] for o in outStat])
         mi    [idx] = np.median(mutualInfo)
-        print(idx, p, deg[idx], mean[idx], median[idx], mse[idx], mi[idx])
+        print(idx, p, deg[idx], mean[idx], median[idx], norm2[idx], mi[idx])
 
         if (idx + 1) % 10 == 0 or idx == len(perturbs) - 1:           
-            saveToFile([deg, mi, mean, mse, median], names, fname)
+            saveToFile([deg, mi, mean, norm2, median], names, fname)
         
     return (np.array(deg),
             np.array(mi),
             np.array(mean),
-            np.array(mse),
+            np.array(norm2),
             np.array(median))
 
 
