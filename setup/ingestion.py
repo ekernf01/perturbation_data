@@ -267,7 +267,7 @@ def checkConsistency(adata: anndata.AnnData,
             plt.figure(figsize=(4,1))
             g = sns.swarmplot(control[:, loc].flatten(), orient='h', label="control")
             g.axvline(tmmNormX[row, loc], 0, 1, color='red', label="treatment", lw=1)
-            g.legend()
+            g.legend(loc='lower right', bbox_to_anchor=(1.45, 0), ncol=1)
             plt.title(f"{perturbagen} {perturbationType}")
             plt.show()
             
