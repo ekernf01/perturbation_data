@@ -205,7 +205,7 @@ def checkConsistency(adata: anndata.AnnData,
     
     assert perturbationType in ["overexpression", "knockout", "knockdown"]
     
-    normX        = deseq2Normalization(adata.X.T).T
+    normX        = adata.X.copy()
     controlIndex = np.where(adata.obs.is_control)[0]
     control      = normX[controlIndex, :]
     logFC        = np.full((adata.n_obs), -999.0)
@@ -277,7 +277,7 @@ def computeCorrelation(adata: anndata.AnnData,
         return spearmanr(logFC1, logFC2)[0], pearsonr (logFC1, logFC2)[0]
     
     
-    normX        = deseq2Normalization(adata.X.T).T
+    normX        = adata.X.copy()
     spearmanList = np.full(adata.n_obs, fill_value=-999, dtype=np.float64)
     pearsonList  = np.full(adata.n_obs, fill_value=-999, dtype=np.float64)
     controlExpr  = normX[adata.obs.is_control, :]
@@ -444,14 +444,6 @@ def computeFoldChangeStats(treatment: np.ndarray, control: np.ndarray):
     """ Compute the log fold change between the treatment group and
     the control group across all genes. """
     logFCStat = np.abs(np.nanmedian(np.log2(treatment / control), axis=0))
-    
-#     for idx in range(treatment.shape[1]):
-#         fc = [np.log2(t/c) for (t,c) 
-#               in it.product(treatment[:,idx], 
-#                             control  [:,idx])]
-#         logFCStat.append(abs(np.nanmedian(fc)))
-        
-#     logFCStat = np.array(logFCStat)
     logFCStat = logFCStat[np.isfinite(logFCStat)]
     
     return (np.mean(logFCStat), 
@@ -509,7 +501,7 @@ def quantifyEffect(
         print(f"The specified column {group} does not exist in adata.obs")
 
     perturbs = sorted(set(adata[~adata.obs.is_control].obs.perturbation))
-    normX    = deseq2Normalization(adata.X.T).T
+    normX    = adata.X.copy()
     
     columnToKeep = list(set(range(normX.shape[1])) - 
                         set(np.where(normX == 0)[1]))
