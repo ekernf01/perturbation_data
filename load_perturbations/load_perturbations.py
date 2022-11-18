@@ -71,4 +71,7 @@ def check_perturbation_dataset(dataset_name: str = None, ad: anndata.AnnData = N
     # Raw data should be present in `raw`.
     assert ad.raw is not None, "raw data are missing"
 
+    # spearman correlation within replicates
+    assert "spearmanCorr" in set(ad.obs.columns), "No spearman correlation found"
+    
     return True

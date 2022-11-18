@@ -6,6 +6,17 @@ import scanpy as sc
 import anndata
 import typing 
 
+# For QC
+import os, sys
+import itertools as it
+from scipy.stats import spearmanr, pearsonr, rankdata, f_oneway
+from statsmodels.stats.multitest import multipletests
+from sklearn.metrics import mutual_info_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+
+
 def simplify_categorical(x:pd.DataFrame, column: str, max_categories: int = 20, filler: str = "other", new_column: str = None):
     """Mark less frequent categories as other. Accepts and returns a dataframe."""
     assert type(x) is pd.DataFrame
@@ -17,6 +28,7 @@ def simplify_categorical(x:pd.DataFrame, column: str, max_categories: int = 20, 
     counts.iloc[0:max_categories, 1] = counts.index[0:max_categories] 
     simplified = pd.merge(x, counts, how = "left", left_on = column, right_index = True)
     return simplified
+
 
 def convert_ens_to_symbol(ensembl_ids, gtf, strip_version = False):
     """Convert ensembl gene id's (incomprehensible) into Entrez gene symbols (e.g. GAPDH)
@@ -87,6 +99,7 @@ def read_cmap(expression_file, gene_metadata, instance_metadata):
     expression_quantified.var_names = expression_quantified.var["pr_gene_symbol"]
     return expression_quantified
 
+
 def describe_perturbation_effect(adata: anndata.AnnData, perturbation_type) -> anndata.AnnData:
     """ Add details on perturbation effect on targeted genes
 
@@ -125,3 +138,543 @@ def describe_perturbation_effect(adata: anndata.AnnData, perturbation_type) -> a
         adata.obs.loc[ p, "expression_level_after_perturbation"] = elap
 
     return adata
+
+
+def deseq2_size_factors(counts_df):
+    """
+    Calculate DESeq size factors
+    median of ratio to reference sample (geometric mean of all samples)
+    
+    https://github.com/broadinstitute/pyqtl/blob/master/qtl/norm.py
+    References:
+     [1] Anders & Huber, 2010
+     [2] R functions:
+          DESeq::estimateSizeFactorsForMatrix
+    """
+    idx = np.all(counts_df>0, axis=1)
+    tmp_df = np.log(counts_df[idx])
+    s = np.exp(np.median(tmp_df.T - np.mean(tmp_df, axis=1), axis=1))
+    return s
+
+
+def deseq2Normalization(counts_df):
+    """
+    Equivalent to DESeq2:::counts.DESeqDataSet; counts(x, normalized=T)
+    """
+    return counts_df / deseq2_size_factors(counts_df)
+
+
+
+def checkConsistency(adata: anndata.AnnData, 
+                     perturbationType: str="overexpression", 
+                     group: str=None,
+                     verbose: bool=False):
+    """ Check whether the gene that was perturbed is actually 
+    measured to be higher (if overexpressed) or lower (if knocked
+    down) or nearly zero (if knocked off).
+    If a perturbagen is a control or is not measured, 'N/A' is labeled. 
+    If a perturbagen's expression is higher or lower than all 
+    control groups (matching the direction of intended perturbation),
+    True is labeled; otherwise, False is labeled.
+    
+    Args:
+        adata (anndata.AnnData): the object to operate on.
+        perturbation_type (str): one of {"overexpression", "knockout", "knockdown"}
+        group (str, default None): a column in adata.obs to indicate sub-group of
+                                   the treatment and the control.
+        verbose (bool): show a swarmplot noting the difference between the control
+                        and the treatment, if the perturbation direction and expression
+                        level are disconcordant.
+    """
+    def visualizeLogFC(fc):
+        validLogFC = fc[fc != -999]
+        rangeMin = np.floor(np.min(validLogFC))
+        rangeMax = np.ceil (np.max(validLogFC))
+        plt.figure(figsize=(4,2.5))
+        plt.hist(validLogFC, 
+                 bins=np.linspace(rangeMin, 
+                                  rangeMax, 
+                                  int((rangeMax-rangeMin)*3+1)), 
+                 label="Per Trial")
+        plt.axvline(0, 0, 1, color='red', label="No Change")
+        plt.xlabel("Log2 Fold Change (perturbed/control)")
+        plt.ylabel("Count")
+        plt.legend()
+        plt.show()
+        
+    
+    assert perturbationType in ["overexpression", "knockout", "knockdown"]
+    
+    normX        = adata.X.copy()
+    controlIndex = np.where(adata.obs.is_control)[0]
+    control      = normX[controlIndex, :]
+    logFC        = np.full((adata.n_obs), -999.0)
+    consistencyStatus = np.full((adata.n_obs), "Yes")
+    
+    for row, perturbagen in sorted(enumerate(adata.obs.perturbation), key=lambda x: x[1]):
+        if (adata.obs.is_control[row] or perturbagen not in adata.var.index):
+            consistencyStatus[row] = "NA"
+            continue
+        loc = np.where(adata.var.index == perturbagen)[0]
+        assert loc.shape[0] == 1
+        
+        if group:        # Only compare treatment to within-group controls (to limit variability)
+            assert group in adata.obs.columns
+            control = normX[adata.obs.is_control & (adata.obs[group] == adata.obs[group][row]), :]
+        
+
+        logFC[row] = np.log2(normX[row, loc[0]] / np.median(control[:, loc]))        
+        
+        if perturbationType == "overexpression" and normX[row, loc] > np.median(control[:, loc]):
+            continue
+        if perturbationType == "knockdown"      and normX[row, loc] < np.median(control[:, loc]):
+            continue
+        if perturbationType == "knockout"       and abs(normX[row, loc]) < 1e-3:
+            continue
+        consistencyStatus[row] = "No"  
+        
+        if verbose:
+            plt.figure(figsize=(4,1))
+            g = sns.swarmplot(control[:, loc].flatten(), orient='h', label="control")
+            g.axvline(normX[row, loc], 0, 1, color='red', label="treatment", lw=1)
+            g.legend(loc='lower right', bbox_to_anchor=(1.45, 0), ncol=1)
+            plt.title(f"{perturbagen} {perturbationType}")
+            plt.show()
+            
+    # NaN -> treatment = 0, control = 0
+    # posInf -> treatment > 0, control = 0 
+    # negInf -> treatment = 0, control = 0
+    # A hacky way of handling this, but I can't really think of something better....
+    # Will talk to Eric/Dr. Cahan about this.        
+    consistencyStatus[np.isnan(logFC)] = "No"
+    logFC[np.isnan(logFC)] = 0
+    logFC[np.isposinf(logFC)] = np.nanmedian(logFC[(logFC > 0) & (logFC != -999) & np.isfinite(logFC)])
+    logFC[np.isneginf(logFC)] = np.nanmedian(logFC[(logFC < 0) & (logFC != -999) & np.isfinite(logFC)])
+    
+    visualizeLogFC(logFC)
+    return consistencyStatus, logFC
+
+
+
+def computeCorrelation(adata: anndata.AnnData, 
+                       verbose: bool=False, 
+                       group: str=None):
+    """
+    Assume the existence of **is_control** in adata.obs. Compute the
+    correlation between biological replica on scale of log fold change. For each 
+    set of perturbation, the final correlation score is the median of 
+    correlation between all pair-wisecombination of perturbation expression
+    and control expression. Both Spearman and Pearson correlation are
+    computed.
+    """
+    
+    def computelogFC(t1, t2, c1, c2):
+        logFC1, logFC2 = np.log2(r1 / c1), np.log2(r2 / c2)
+        validGeneEntry = np.isfinite(logFC1) & np.isfinite(logFC2)
+        logFC1 = logFC1[validGeneEntry]
+        logFC2 = logFC2[validGeneEntry]
+        
+        return spearmanr(logFC1, logFC2)[0], pearsonr (logFC1, logFC2)[0]
+    
+    
+    normX        = adata.X.copy()
+    spearmanList = np.full(adata.n_obs, fill_value=-999, dtype=np.float64)
+    pearsonList  = np.full(adata.n_obs, fill_value=-999, dtype=np.float64)
+    controlExpr  = normX[adata.obs.is_control, :]
+    
+    for perturbagen in sorted(set(adata[~adata.obs.is_control].obs.perturbation)):
+        
+        # All perturbation expressions
+        replicaRow  = np.where(adata.obs.perturbation == perturbagen)[0]
+        if replicaRow.shape[0] == 1:        # skip perturbation w/o replication
+            continue
+        
+        if verbose:                         # print how many replicas each perturbagen has
+            print(replicaRow, perturbagen)
+            
+        temp1, temp2 = list(), list()
+        for (row1, row2) in it.combinations(replicaRow, 2):
+            r1, r2 = normX[row1, :], normX[row2, :]
+            if group:
+                assert group in adata.obs.columns
+                g1, g2 = adata.obs[group][row1], adata.obs[group][row2]
+                c1 = np.median(normX[(adata.obs.is_control) & (adata.obs[group] == g1), :], axis=0)
+                c2 = np.median(normX[(adata.obs.is_control) & (adata.obs[group] == g2), :], axis=0)
+                s, p = computelogFC(r1, r2, c1, c2)
+            else:
+                c1 = np.median(controlExpr.copy(), axis=0)
+                s, p = computelogFC(r1, r2, c1, c1)
+            temp1.append(s)
+            temp2.append(p)                
+        
+        # Record the median values
+        spearmanList[replicaRow] = np.median(temp1)
+        pearsonList [replicaRow] = np.median(temp2)
+            
+            
+    # Everything below this is to produce plots
+    if verbose:
+        corrVal = np.array([spearmanList, pearsonList]).flatten()[:, np.newaxis]
+        corrStr = np.array(["Spearman"] * len(spearmanList) + 
+                           ["Pearson" ] * len(pearsonList)).flatten()[:, np.newaxis]
+        
+        assert "consistentW/Perturbation" in adata.obs
+        assert "logFC" in adata.obs
+
+        status  = np.tile(adata.obs['consistentW/Perturbation'], 2)[:, np.newaxis]
+        logFC   = np.tile(adata.obs['logFC']                   , 2)[:, np.newaxis]
+        corrDF  = pd.DataFrame(np.hstack([corrVal, corrStr, logFC, status]), 
+                               columns=["Value", "Name", "logFC", "ConsistentW/Perturbation"])
+        corrDF[['Value']] = corrDF[['Value']].apply(pd.to_numeric)
+        corrDF[['logFC']] = corrDF[['logFC']].apply(pd.to_numeric)
+        delCol  = ((corrDF["Value"] == -999) | 
+                   (corrDF["ConsistentW/Perturbation"] == "NA") | 
+                   (corrDF["logFC"] == -999))
+        corrDF  = corrDF.loc[~delCol, :]
+
+        fig, axes = plt.subplots(2,3, figsize=(10,7), width_ratios=[0.4, 0.1, 0.5])
+        axes[0,0].set_xlabel("Spearman Correlation")
+        axes[0,0].set_ylabel("Pearson Correlation")
+        axes[0,0].scatter(x=corrDF[corrDF["Name"] == "Spearman"].iloc[:,0], 
+                        y=corrDF[corrDF["Name"] == "Pearson" ].iloc[:,0], s=1)
+        
+        gs = axes[0, 2].get_gridspec()
+        axes[0, 1].remove()
+        axes[0, 2].remove()
+        axes[1, 1].remove()
+        axes[1, 2].remove()
+        axlong = fig.add_subplot(gs[:, -1])
+
+        sns.violinplot(data=corrDF, 
+                       x="Value", 
+                       y="Name", 
+                       hue="ConsistentW/Perturbation", 
+                       split=False,
+                       cut=0,
+                       scale="count",
+                       ax=axlong)
+        axlong.set_xlabel("Correlation Scores")
+        
+        sns.scatterplot(data=corrDF[corrDF["Name"] == "Spearman"],
+                        x="Value",
+                        y="logFC",
+                        hue="ConsistentW/Perturbation", 
+                        # style="ConsistentW/Perturbation", 
+                        ax=axes[1,0])
+        axes[1,0].set_xlabel("Spearman Correlation")
+
+        plt.show()
+        
+    return spearmanList, pearsonList
+
+
+# ============================= separator ============================= #
+#                                                                       #
+#            Here is the START of code that computes bigness            #
+#                                                                       #
+# ===================================================================== #
+
+
+def thresholdByFoldChange(treatment: np.ndarray, control: np.ndarray):
+    """ Compute the log fold change between the treatment group and
+    the control group. If all log(FC) are positive and the smallest
+    one is at least log2, or if all are negative and the largest
+    one is at least -log2, we claim the change is significant. 
+    Otherwise, we say it is not significant. Also, if some log(FC)
+    are positive and some are negative, we say that there is no change """
+    fcThreshold = list()
+    for idx in range(treatment.shape[1]):
+        fc = [np.log2(t/c) for (t,c) 
+              in it.product(treatment[:,idx], 
+                            control  [:,idx])]
+        fc = np.array(fc)
+        if all(fc > 0):
+            fcThreshold.append(np.min(fc))
+        elif all(fc < 0):
+            fcThreshold.append(np.max(fc))
+        else:
+            fcThreshold.append(0)        
+#         if ( (all(fc > 0) and np.min(fc) >  np.log(2)) or
+#              (all(fc < 0) and np.max(fc) < -np.log(2)) ):
+#             fcThreshold.append(True)
+#         else:
+#             fcThreshold.append(False)
+    return fcThreshold
+
+
+def thresholdByFDR(treatment: np.ndarray, control: np.ndarray, verbose: bool=False):
+    """ Compute the false discovery rate for ANOVA between the
+    treatment group and the control group. First compute the p-value
+    under the standard ANOVA procedure (assuming variances are equal
+    across groups). Then, adjust for FDR with Benjamini-Hochberg 
+    procedure. Finally, threshold at 0.05.
+    """
+    samples = [[treatment[:, idx], 
+                control  [:, idx]] for idx in range(control.shape[1])]
+    pVals   = np.array([f_oneway(*s).pvalue for s in samples])
+    pVals[np.isnan(pVals)] = 1
+    pAdjusted = multipletests(pVals, method='fdr_bh')[1]
+    if verbose:
+        plt.figure(figsize=(3,3))
+        plt.hist(pVals, bins=np.linspace(-0, 1, 102), alpha=0.5)
+        plt.hist(pAdjusted, bins=np.linspace(-0, 1, 102), alpha=0.5)
+        plt.show()
+    return pAdjusted < 0.05
+    
+
+def calcMI(treatment: np.ndarray, control: np.ndarray, bins: int=100, verbose: bool=False):
+    """ Compute the mutual information between
+    the treatment and control. The expression values
+    of the control (before perturbation) and the 
+    treatment (after perturbation) are binned and 
+    a discrete joint probability mass function 
+    is computed. """
+    miList = list()
+    
+    for (i,j) in it.product(treatment, control):        
+        c_xy = np.histogram2d(np.log2(i), np.log2(j), bins)[0]
+        miList.append(mutual_info_score(None, None, contingency=c_xy))
+        if verbose:
+            sns.heatmap(np.log2(c_xy))
+            plt.show()
+    return np.median(miList)
+    
+
+def computeFoldChangeStats(treatment: np.ndarray, control: np.ndarray):
+    """ Compute the log fold change between the treatment group and
+    the control group across all genes. """
+    logFCStat = np.abs(np.nanmedian(np.log2(treatment / control), axis=0))
+    logFCStat = logFCStat[np.isfinite(logFCStat)]
+    
+    return (np.mean(logFCStat), 
+            np.median(logFCStat), 
+            np.linalg.norm(logFCStat, ord=2))
+
+    
+def readFile(perturbs: list[str], variables: list, names: str, filename: str):
+    """ Variables are 
+    ['deg', 'mi', 'mean', 'norm2', 'median'] 
+    Because running hundreds of thousands of ANOVA
+    takes time, the results are saved in a file, 
+    enabling resumption at any time. """
+    if os.path.exists(filename):
+        df = pd.read_csv(filename, header=0)
+        for idx, v in enumerate(variables):
+            variables[idx] = df[names[idx]]
+    else:
+        for idx, v in enumerate(variables):
+            variables[idx] = np.full(len(perturbs), -1, dtype=np.float64)
+    return variables
+    
+
+def saveToFile(variables: list, names: str, filename: str):
+    """ Save current progress to disk periodically """
+    arr = np.hstack([v[:, np.newaxis] for v in variables])
+    df  = pd.DataFrame(arr, columns=names)
+    df.to_csv(filename, index=False)    
+    
+
+def quantifyEffect(
+    adata, 
+    fname: str,                
+    group: str=None, 
+    diffExprFC=True, 
+    prefix: str="",
+    withDEG: bool=True,
+    withMI: bool=True
+) -> tuple[np.ndarray]:
+    """ Compute the metrics that evaluate the biggness 
+    of perturbation
+    
+    adata (anndata.AnnData): expression matrix + metadata
+    fname (str): path to the file that stores the metrics
+    group (str): whether to group treatment/control that 
+                 come from the same biological specimen
+    diffExprFC (bool): when counting the number of differentially
+                       expressed genes, whether to threshold based
+                       on log fold change or not.
+    """
+    try:
+        if group:
+            assert group in adata.obs.columns
+    except:
+        print(f"The specified column {group} does not exist in adata.obs")
+
+    perturbs = sorted(set(adata[~adata.obs.is_control].obs.perturbation))
+    normX    = adata.X.copy()
+    
+    columnToKeep = list(set(range(normX.shape[1])) - 
+                        set(np.where(normX == 0)[1]))
+    print(len(columnToKeep))
+    
+    control = normX[adata.obs.is_control, :]
+    names   = ["deg", "mi", "mean", "norm2", "median"]
+    metric  = [list() for i in range(len(names))]
+    category= set(adata.obs[group]) if group else ["all"]
+    
+    # Load what's already computed, if any
+    (deg, mi, mean, norm2, median) = readFile(perturbs, metric, names, fname)
+    
+    for idx, p in enumerate(perturbs):
+        
+        # Retrieve all perturbation related to a given TF
+        rows = np.where(adata.obs.perturbation == p)[0]
+        treatment = normX[adata.obs.perturbation == p, :]
+        
+        # If missing values, re-compute
+        if -1 not in [deg[idx], mean[idx], norm2[idx], median[idx], mi[idx]]:
+            print(idx, p, deg[idx], mean[idx], median[idx], norm2[idx], mi[idx])
+            continue
+        
+        # If stratify by group, record each group and take the median across groups.
+        fcThreshold, pVThreshold, outStat, mutualInfo = [], [], [], []
+        for g in category:
+            t = (normX[(adata.obs.perturbation == p) &
+                       (adata.obs[group] == g), :] 
+                 if group else treatment)
+            c = (normX[(adata.obs.is_control) & 
+                       (adata.obs[group] == g), :] 
+                 if group else control)
+
+            # have to use all c to increase the power of statistical tests
+            if withDEG:
+                fcThreshold.append(thresholdByFoldChange (t, c))
+                pVThreshold.append(thresholdByFDR        (t, c, verbose=False))
+                
+            # Use median of control to skip over many computation
+            c = np.median(c, axis=0)[np.newaxis,:]
+            if withMI:
+                mutualInfo .append(calcMI                (t[:,columnToKeep], 
+                                                          c[:,columnToKeep], 
+                                                          100))
+            outStat    .append(computeFoldChangeStats(t, c))
+
+            
+        if withDEG:
+            # If log fold change across samples are consistent (in direction) and meet the threshold
+            fcThreshold = np.array(fcThreshold)
+            fcThreshold = [fcThreshold[:, col] for col in range(fcThreshold.shape[1])]
+            temp = [True if ( (all(pVal > 0) or all(pVal < 0)) and
+                              (np.min(np.abs(pVal)) > np.log2(2)) ) 
+                    else False
+                    for pVal 
+                    in fcThreshold]
+            fcThreshold = np.array(temp)
+            pVThreshold = np.multiply.reduce(pVThreshold, axis=0)
+
+        # Record a given perturbagen's effective.
+        if withDEG:
+            deg[idx] = sum(fcThreshold & pVThreshold) if diffExprFC else sum(pVThreshold)
+        else:
+            deg[idx] = -999
+        if withMI:
+            mi[idx] = np.median(mutualInfo)
+        else:
+            mi[idx] = -999
+
+        mean  [idx] = np.median([o[0] for o in outStat])
+        median[idx] = np.median([o[1] for o in outStat])
+        norm2 [idx] = np.median([o[2] for o in outStat])
+        print(idx, p, deg[idx], mean[idx], median[idx], norm2[idx], mi[idx])
+
+        if (idx + 1) % 30 == 0 or idx == len(perturbs) - 1:           
+            saveToFile([deg, mi, mean, norm2, median], names, fname)
+        
+    metrics = [deg, mi, mean, norm2, median]
+    names   = ['DEG', 'MI', 'logFCMean', 'logFCNorm2', 'logFCMedian']
+    
+    for mCount in range(5):
+        adata.obs[f'{prefix}{names[mCount]}'] = np.full(adata.n_obs, -999, dtype=np.float64)
+        for pCount, p in enumerate(perturbs):
+            rows = np.where(adata.obs.perturbation == p)[0]
+            adata.obs[f'{prefix}{names[mCount]}'][rows] = metrics[mCount][pCount]
+
+
+# ============================= separator ============================= #
+#                                                                       #
+#              Here is the END of code that computes bigness            #
+#                                                                       #
+# ===================================================================== #
+
+
+def checkPerturbationEffectMetricCorrelation(adata: anndata.AnnData, metrics): 
+
+    for (n1, n2) in it.combinations(metrics, r=2):
+        assert n1 in adata.obs
+        assert n2 in adata.obs
+        perturbagen = adata.obs.perturbation 
+        keepRow = ((adata.obs[n1] != -999) & 
+                   (adata.obs[n2] != -999) & 
+                   (adata.obs.perturbation.duplicated()) & 
+                   (~adata.obs.is_control))
+        metric1 = adata[keepRow].obs[n1]
+        metric2 = adata[keepRow].obs[n2]
+
+        plt.figure(figsize=(2,2))
+        plt.scatter(metric1, 
+                    metric2, 
+                    s=1, 
+                    label=f"{spearmanr(metric1, metric2)[0]:.3f}")
+        plt.xlabel(n1)
+        plt.ylabel(n2)
+        plt.legend()
+        plt.show()
+    
+    
+
+def visualizePerturbationEffect(adata, metrics, TFDict, EpiDict):
+    """ Everything is artificially shifted right by one 
+    since a non-visible bar (with height=0) is
+    inserted at the beginning. This is done to coerce the
+    legend color for TF/Chromatin Modifier to be 'orange' """
+    keepRow      = (~adata.obs.perturbation.duplicated() & (~adata.obs.is_control)) 
+    perturbagens = adata[keepRow].obs.perturbation
+    colorDict    = {'No': '#1f77b4', 'Yes': '#ff7f0e'}
+    perturbagenStatus = np.array(["Yes" if p in TFDict or p in EpiDict else "No" for p in perturbagens])
+    perturbagenColor  = np.array([colorDict[p] for p in perturbagenStatus])
+
+    for idx, m in enumerate(metrics):
+        plt.figure(figsize=(25,3))
+        metricValue = adata[keepRow].obs[m]
+        ordering    = np.argsort(metricValue)[::-1]
+        if 'mutualInfo' in m:
+            index = index[::-1]
+        plt.bar(np.arange(len(perturbagens)+1), 
+                [0] + list(metricValue[ordering]), 
+                width=0.6, 
+                linewidth=0, 
+                color=[colorDict['Yes']] + list(perturbagenColor[ordering]), 
+                log=True, 
+                label="TF/Chromatin Modifier")
+        plt.bar(0, 
+                0, 
+                color=[colorDict['No']],
+                label="Other Genes")
+        plt.legend()
+        plt.ylabel(f"{m} Value")
+        otherGene = np.array([(i+1,p) for i,p in enumerate(perturbagens[ordering]) 
+                              if perturbagenStatus[ordering][i] == 'No'])
+        otherGene = np.insert(otherGene, 0, [0, ""], axis=0)
+        plt.xticks(otherGene[:,0].astype(int), otherGene[:,1], rotation=90, fontsize=10)
+        plt.xlim([0, len(perturbagens)+1])
+        plt.show()
+
+
+def visualizePerturbationMetadata(adata: anndata.AnnData, x: str, y: str, style=None, hue=None, markers=None, xlim=[-1, 1]):
+    validMat = (adata.obs[x] != -999) & (adata.obs[y] != -999) & (~adata.obs.is_control)
+
+    plt.figure(figsize=(8, 5))
+    g =sns.scatterplot(data=adata.obs[validMat], 
+                       x=x,
+                       y=y,
+                       style=style, 
+                       hue=hue, 
+                       markers=markers,
+                       palette=sns.color_palette("coolwarm", as_cmap=True), 
+                       legend='brief')
+    plt.axhline(0, 0, 1, linestyle='-.', color='brown')
+    g.legend(loc='lower right', bbox_to_anchor=(1.4, 0), ncol=1)
+    plt.ylabel(f"{y} of Perturbed Gene")
+    plt.xlim(xlim)
+    plt.show()
+
