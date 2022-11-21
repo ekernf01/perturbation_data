@@ -243,7 +243,7 @@ def checkConsistency(adata: anndata.AnnData,
             
     # NaN -> treatment = 0, control = 0
     # posInf -> treatment > 0, control = 0 
-    # negInf -> treatment = 0, control = 0
+    # negInf -> treatment = 0, control > 0 (knocked out)
     # A hacky way of handling this, but I can't really think of something better....
     # Will talk to Eric/Dr. Cahan about this.        
     consistencyStatus[np.isnan(logFC)] = "No"
@@ -282,6 +282,7 @@ def computeCorrelation(adata: anndata.AnnData,
     pearsonList  = np.full(adata.n_obs, fill_value=-999, dtype=np.float64)
     controlExpr  = normX[adata.obs.is_control, :]
     
+    tempc = 0
     for perturbagen in sorted(set(adata[~adata.obs.is_control].obs.perturbation)):
         
         # All perturbation expressions
@@ -290,7 +291,8 @@ def computeCorrelation(adata: anndata.AnnData,
             continue
         
         if verbose:                         # print how many replicas each perturbagen has
-            print(replicaRow, perturbagen)
+            tempc += 1
+            print(replicaRow, perturbagen, tempc)
             
         temp1, temp2 = list(), list()
         for (row1, row2) in it.combinations(replicaRow, 2):
@@ -660,9 +662,18 @@ def visualizePerturbationEffect(adata, metrics, TFDict, EpiDict):
         plt.show()
 
 
-def visualizePerturbationMetadata(adata: anndata.AnnData, x: str, y: str, style=None, hue=None, markers=None, xlim=[-1, 1]):
+def visualizePerturbationMetadata(
+    adata: anndata.AnnData, 
+    x: str, 
+    y: str, 
+    style=None, 
+    hue=None, 
+    markers=None, 
+    xlim=[-1, 1], 
+    s=30
+):
     validMat = (adata.obs[x] != -999) & (adata.obs[y] != -999) & (~adata.obs.is_control)
-
+    print(f"{len(validMat)} number of points are plotted")
     plt.figure(figsize=(8, 5))
     g =sns.scatterplot(data=adata.obs[validMat], 
                        x=x,
@@ -671,7 +682,8 @@ def visualizePerturbationMetadata(adata: anndata.AnnData, x: str, y: str, style=
                        hue=hue, 
                        markers=markers,
                        palette=sns.color_palette("coolwarm", as_cmap=True), 
-                       legend='brief')
+                       legend='brief', 
+                       s=s)
     plt.axhline(0, 0, 1, linestyle='-.', color='brown')
     g.legend(loc='lower right', bbox_to_anchor=(1.4, 0), ncol=1)
     plt.ylabel(f"{y} of Perturbed Gene")
