@@ -289,8 +289,8 @@ def computeCorrelation(adata: anndata.AnnData,
         if replicaRow.shape[0] == 1:        # skip perturbation w/o replication
             continue
         
-        if verbose:                         # print how many replicas each perturbagen has
-            print(replicaRow, perturbagen)
+        # if verbose:                         # print how many replicas each perturbagen has
+        #     print(replicaRow, perturbagen)
             
         temp1, temp2 = list(), list()
         for (row1, row2) in it.combinations(replicaRow, 2):
@@ -660,7 +660,7 @@ def visualizePerturbationEffect(adata, metrics, TFDict, EpiDict):
         plt.show()
 
 
-def visualizePerturbationMetadata(adata: anndata.AnnData, x: str, y: str, style=None, hue=None, markers=None, xlim=[-1, 1]):
+def visualizePerturbationMetadata(adata: anndata.AnnData, x: str, y: str, style=None, hue=None, markers=None, xlim=[-1, 1], s=30):
     validMat = (adata.obs[x] != -999) & (adata.obs[y] != -999) & (~adata.obs.is_control)
 
     plt.figure(figsize=(8, 5))
@@ -671,7 +671,8 @@ def visualizePerturbationMetadata(adata: anndata.AnnData, x: str, y: str, style=
                        hue=hue, 
                        markers=markers,
                        palette=sns.color_palette("coolwarm", as_cmap=True), 
-                       legend='brief')
+                       legend='brief', 
+                       s=s)
     plt.axhline(0, 0, 1, linestyle='-.', color='brown')
     g.legend(loc='lower right', bbox_to_anchor=(1.4, 0), ncol=1)
     plt.ylabel(f"{y} of Perturbed Gene")
