@@ -2,10 +2,10 @@ PROJECT_PATH = '/home/ekernf01/Desktop/jhu/research/projects/perturbation_predic
 import importlib
 import sys
 import os
-sys.path.append(os.path.expanduser(os.path.join(PROJECT_PATH, 'perturbations', 'load_perturbations'))) 
+sys.path.append(os.path.expanduser(os.path.join(PROJECT_PATH, 'perturbation_data', 'load_perturbations'))) 
 import load_perturbations
 importlib.reload(load_perturbations)
-os.environ["PERTURBATION_PATH"]  = PROJECT_PATH + "perturbations/perturbations"
+os.environ["PERTURBATION_PATH"]  = PROJECT_PATH + "perturbation_data/perturbations"
 
 for dataset_name in load_perturbations.load_perturbation_metadata().query("is_ready=='yes'")["name"]:
     print("Checking " + dataset_name)
