@@ -290,9 +290,8 @@ def computeCorrelation(adata: anndata.AnnData,
         if replicaRow.shape[0] == 1:        # skip perturbation w/o replication
             continue
         
-        if verbose:                         # print how many replicas each perturbagen has
-            tempc += 1
-            print(replicaRow, perturbagen, tempc)
+        # if verbose:                         # print how many replicas each perturbagen has
+        #     print(replicaRow, perturbagen)
             
         temp1, temp2 = list(), list()
         for (row1, row2) in it.combinations(replicaRow, 2):
