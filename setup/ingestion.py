@@ -9,7 +9,7 @@ import typing
 # For QC
 import os, sys
 import itertools as it
-from scipy.stats import spearmanr, pearsonr, rankdata, f_oneway
+from scipy.stats import spearmanr, pearsonr, rankdata, f_oneway, ttest_ind
 from statsmodels.stats.multitest import multipletests
 from sklearn.metrics import mutual_info_score
 import matplotlib.pyplot as plt
@@ -168,7 +168,8 @@ def deseq2Normalization(counts_df):
 def checkConsistency(adata: anndata.AnnData, 
                      perturbationType: str="overexpression", 
                      group: str=None,
-                     verbose: bool=False):
+                     verbose: bool=False, 
+                     do_return_pval = False):
     """ Check whether the gene that was perturbed is actually 
     measured to be higher (if overexpressed) or lower (if knocked
     down) or nearly zero (if knocked off).
@@ -186,19 +187,25 @@ def checkConsistency(adata: anndata.AnnData,
                         and the treatment, if the perturbation direction and expression
                         level are disconcordant.
     """
-    def visualizeLogFC(fc):
+    def visualizeLogFC(fc, pval = None):
         validLogFC = fc[fc != -999]
         rangeMin = np.floor(np.min(validLogFC))
         rangeMax = np.ceil (np.max(validLogFC))
         plt.figure(figsize=(4,2.5))
-        plt.hist(validLogFC, 
-                 bins=np.linspace(rangeMin, 
-                                  rangeMax, 
-                                  int((rangeMax-rangeMin)*3+1)), 
-                 label="Per Trial")
+        if pval is not None:
+            pval = pval[pval != -999]
+            plt.scatter(validLogFC, -np.log10(pval))
+            plt.ylabel("-Log10 p-value")
+        else:
+            plt.hist(validLogFC, 
+                    bins=np.linspace(rangeMin, 
+                                    rangeMax, 
+                                    int((rangeMax-rangeMin)*3+1)), 
+                    label="Per Trial")
+            plt.ylabel("Count")
+
         plt.axvline(0, 0, 1, color='red', label="No Change")
         plt.xlabel("Log2 Fold Change (perturbed/control)")
-        plt.ylabel("Count")
         plt.legend()
         plt.show()
         
@@ -209,6 +216,7 @@ def checkConsistency(adata: anndata.AnnData,
     controlIndex = np.where(adata.obs.is_control)[0]
     control      = normX[controlIndex, :]
     logFC        = np.full((adata.n_obs), -999.0)
+    pval         = np.full((adata.n_obs), -999.0)
     consistencyStatus = np.full((adata.n_obs), "Yes")
     
     for row, perturbagen in sorted(enumerate(adata.obs.perturbation), key=lambda x: x[1]):
@@ -223,8 +231,13 @@ def checkConsistency(adata: anndata.AnnData,
             control = normX[adata.obs.is_control & (adata.obs[group] == adata.obs[group][row]), :]
         
 
-        logFC[row] = np.log2(normX[row, loc[0]] / np.median(control[:, loc]))        
-        
+        logFC[row] = np.log2(normX[row, loc[0]] / np.median(control[:, loc]))   
+        has_same_perturbation = perturbagen == adata.obs.perturbation
+        pval[row] = ttest_ind(
+            np.log2(normX[has_same_perturbation, loc[0]]), 
+            np.log2(control[:, loc[0]]), 
+            equal_var=True,
+        ).pvalue
         if perturbationType == "overexpression" and normX[row, loc] > np.median(control[:, loc]):
             continue
         if perturbationType == "knockdown"      and normX[row, loc] < np.median(control[:, loc]):
@@ -244,15 +257,17 @@ def checkConsistency(adata: anndata.AnnData,
     # NaN -> treatment = 0, control = 0
     # posInf -> treatment > 0, control = 0 
     # negInf -> treatment = 0, control > 0 (knocked out)
-    # A hacky way of handling this, but I can't really think of something better....
-    # Will talk to Eric/Dr. Cahan about this.        
     consistencyStatus[np.isnan(logFC)] = "No"
     logFC[np.isnan(logFC)] = 0
     logFC[np.isposinf(logFC)] = np.nanmedian(logFC[(logFC > 0) & (logFC != -999) & np.isfinite(logFC)])
     logFC[np.isneginf(logFC)] = np.nanmedian(logFC[(logFC < 0) & (logFC != -999) & np.isfinite(logFC)])
     
-    visualizeLogFC(logFC)
-    return consistencyStatus, logFC
+    if do_return_pval:
+        visualizeLogFC(logFC, pval)
+        return consistencyStatus, logFC, pval
+    else:
+        visualizeLogFC(logFC)
+        return consistencyStatus, logFC
 
 
 
@@ -261,9 +276,9 @@ def computeCorrelation(adata: anndata.AnnData,
                        group: str=None):
     """
     Assume the existence of **is_control** in adata.obs. Compute the
-    correlation between biological replica on scale of log fold change. For each 
+    correlation between biological replicates on scale of log fold change. For each 
     set of perturbation, the final correlation score is the median of 
-    correlation between all pair-wisecombination of perturbation expression
+    correlation between all pair-wise combinations of perturbation expression
     and control expression. Both Spearman and Pearson correlation are
     computed.
     """
@@ -484,8 +499,8 @@ def quantifyEffect(
     withDEG: bool=True,
     withMI: bool=True
 ) -> tuple[np.ndarray]:
-    """ Compute the metrics that evaluate the biggness 
-    of perturbation
+    """ Compute the metrics that evaluate the global transcriptomic effect size 
+    of each perturbation
     
     adata (anndata.AnnData): expression matrix + metadata
     fname (str): path to the file that stores the metrics
@@ -668,9 +683,12 @@ def visualizePerturbationMetadata(
     style=None, 
     hue=None, 
     markers=None, 
-    xlim=[-1, 1], 
+    xlim=None, 
     s=30
 ):
+    if xlim is None:
+        span = adata.obs[x].max() - adata.obs[x].min()
+        xlim = [adata.obs[x].min()-span/10, adata.obs[x].max()+span/10]
     validMat = (adata.obs[x] != -999) & (adata.obs[y] != -999) & (~adata.obs.is_control)
     print(f"{len(validMat)} number of points are plotted")
     plt.figure(figsize=(8, 5))
