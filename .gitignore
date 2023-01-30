@@ -1,0 +1,3 @@
+perturbations/*/*
+*.ipynb_checkpoints
+*.pyc
