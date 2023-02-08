@@ -3,8 +3,12 @@ import pandas as pd
 import scanpy as sc
 import anndata
 
+
 def load_perturbation_metadata():
-    return pd.read_csv(os.path.join(os.environ["PERTURBATION_PATH"], "perturbations.csv"))
+    try:
+        return pd.read_csv(os.path.join(os.environ["PERTURBATION_PATH"], "perturbations.csv"))
+    except KeyError as e:
+        raise(KeyError("Please set os.environ['PERTURBATION_PATH'] to point to the perturbation data collection."))
 
 def load_perturbation(dataset_name: str, training_data_only: bool = False):
     """Load a perturbation dataset. 
@@ -16,7 +20,10 @@ def load_perturbation(dataset_name: str, training_data_only: bool = False):
     Returns:
         anndata.AnnData: Perturbation data in a uniform format as described by `check_perturbation_dataset` or the README. 
     """
-    return sc.read_h5ad(os.path.join(os.environ["PERTURBATION_PATH"], dataset_name, "test.h5ad"))
+    try:
+        return sc.read_h5ad(os.path.join(os.environ["PERTURBATION_PATH"], dataset_name, "test.h5ad"))
+    except KeyError as e:
+        raise(KeyError("Please set os.environ['PERTURBATION_PATH'] to point to the perturbation data collection."))
 
 def check_perturbation_dataset(dataset_name: str = None, ad: anndata.AnnData = None):
     """Enforce expectations on a perturbation dataset.
@@ -32,12 +39,23 @@ def check_perturbation_dataset(dataset_name: str = None, ad: anndata.AnnData = N
     if ad is None and dataset_name is not None:
         ad = load_perturbation(dataset_name)
     
+    # We will later select a variable number of genes based on this ranking. 
+    assert "highly_variable_rank" in set(ad.var.columns), "Genes must be ranked in .var['highly_variable_rank']"
+    assert all(~ad.var["highly_variable_rank"].isnull()), "Gene rankings should not be missing for any genes."
+    assert all(ad.var["highly_variable_rank"]>=0), "Gene rankings must be positive integers"
+
     # Names of genes perturbed
     assert "perturbation" in set(ad.obs.columns), "No 'perturbation' column"
     
     # Level of those genes after perturbation
     assert "expression_level_after_perturbation" in set(ad.obs.columns), "No 'expression_level_after_perturbation' column"
-    
+    for i in ad.obs.index:
+        p = ad.obs.loc[i, "perturbation"]
+        elap = ad.obs.loc[i, "expression_level_after_perturbation"]
+        n_levels = len(str(elap).split(","))
+        n_perts =  len(str(p   ).split(","))
+        assert n_levels==n_perts, f"Too many or too few expression_level_after_perturbation entries in sample {i}: {p}, {elap}"
+
     # Overexpression / knockout / knockdown
     assert "perturbation_type" in set(ad.obs.columns), "No 'perturbation_type' column"    
     assert all(
@@ -51,12 +69,11 @@ def check_perturbation_dataset(dataset_name: str = None, ad: anndata.AnnData = N
     assert       ad.obs["is_control"].any(), "no controls found"
     assert not   ad.obs["is_control"].all(), "only controls found"
 
-    # A set `"perturbed_but_not_measured_genes"` in `uns`, containing all genes or pathways that are perturbed but not measured.
-    # A set `"perturbed_and_measured_genes"` in `uns`, containing all genes or pathways that are perturbed and also measured.
+    # if it says it's (not) measured, make sure it's (not) measured.
     assert all( [    g in ad.var_names for g in ad.uns["perturbed_and_measured_genes"]] ),     "perturbed_and_measured_genes"    " not all measured"
     assert all( [not g in ad.var_names for g in ad.uns["perturbed_but_not_measured_genes"]] ), "perturbed_and_not_measured_genes sometimes measured"
     
-    # This is more complicated when each perturbation can affect multiple genes.
+    # If it says it's perturbed, make sure it's perturbed. 
     has_multiple_genes_hit = "perturbations_overlap" in ad.uns.keys() and ad.uns["perturbations_overlap"]
     if has_multiple_genes_hit:
         all_genes_hit = set.union(*[set(p.split(",")) for p in ad.obs["perturbation"]])      
