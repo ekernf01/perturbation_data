@@ -1,52 +1,17 @@
-### Using the perturbations
 
-This is a collection of uniformly formatted perturbation datasets. We offer R and Python code to quickly read and write from this collection. **The R code doesn't exist yet but the Python does.** 
+This is a collection of uniformly formatted perturbation datasets, accompanied by the code used to acquire and clean the data. This part of our [benchmarking project](https://github.com/ekernf01/perturbation_writing).
+
+### Usage
+
+For a Python API, consult the [companion package](https://github.com/ekernf01/load_perturbations). There is no R API but you could probably use this collection from R; see format details below.
 
 ### Installation
 
-This collection is not yet set up for deployment to non-Eric users. Main obstacles: 
-
-- The Python code is not pip-installable or conda-installable. But it's in this repo, and you can point `sys.path.append` to it. (see example usage below.)
-- The networks themselves are too big to put on GitHub. But they are on Patrick's AWS at `s3://cahanlab/eric.kernfeld/eric_laptop/research/projects/perturbation_prediction/cell_type_knowledge_transfer/perturbation_data/`. 
+The networks themselves are too big to put on GitHub. But they are on Patrick's AWS at `s3://cahanlab/eric.kernfeld/eric_laptop/research/projects/perturbation_prediction/cell_type_knowledge_transfer/perturbation_data/`. 
 
 Recommended installation: clone this repo, then find the actual datasets on AWS and place them manually in the `perturbations` directory. 
 
-### Environments
-
-Currently, python code is run from a conda environment called `cell_type_grn_transfer`. See the benchmarking folder for more details. R code does not yet have a controlled environment.
-
-In R:
-
-```
-source("R/load_perturbations.R")
-# Set this to point to the "perturbations" folder adjacent to this README. 
-options(PERTURBATION_PATH = "perturbations")
-# What datasets are available?
-View(load_perturbation_metadata())
-# Grab one
-nakatake_et_al = load_perturbation("nakatake") 
-```
-
-In Python:
-
-```
-# Set this to point to the "load_perturbations" folder inside the "perturbations" folder adjacent to this README. 
-sys.path.append('path/to/load_perturbations/') 
-import load_perturbations
-# Set this to point to the "perturbations" folder adjacent to this README. 
-os.environ["PERTURBATION_PATH"] = "perturbations"
-# What datasets are available?
-load_perturbations.load_perturbation_metadata()
-# Grab one
-nakatake_et_al = load_perturbations.load_perturbation("nakatake") 
-```
-
-### Layout
-
-- `load_perturbations`: Code to access these networks
-- `perturbations`: perturbations stored in h5ad (AnnData) format
-- `not_ready`: Datasets that we may in the future process into regular format
-- `setup`: code and documentation describing how we assembled and formatted this collection.
+Eventually, once it's public: probably a zenodo link.
 
 ### About the datasets 
 
@@ -66,12 +31,12 @@ Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/
 
 ### Adding new datasets and setting clear expectations
 
-Every AnnData object conforms to certain expectations. This list is in progress and the README may be out of date; look at the function `check_perturbation_dataset` in `setup/ingestion.py` for authoritative details. To add new datasets or alter ingestion of a current dataset, look at the notebooks in `setup.py` for examples, and ensure that the result ultimately passes the assertions done by `check_perturbation_dataset`. 
+Every AnnData object in the collection conforms to certain expectations. This list is in progress and this README may be out of date, but you can use at the function `load_perturbations.check_perturbation_dataset()` in the loader package for authoritative details. To add new datasets or alter ingestion of a current dataset, look at the notebooks in `setup.py` for examples, and ensure that the result ultimately passes the assertions done by `check_perturbation_dataset()`. 
 
-- A column `"perturbation"` in `.obs`, dtype `str`, indicating what gene or geness are perturbed (e.g. `"FOXN1"` or `"FOXN1,PAX9"`).
+- A column `"perturbation"` in `.obs`, dtype `str`, indicating what gene or genes are perturbed (e.g. `"FOXN1"` or `"FOXN1,PAX9"`).
 - A boolean column in `.obs` called `"is_control"`, with the obvious meaning
-- An iterable `"perturbed_but_not_measured_genes"` in `uns`, containing all genes or pathways that are perturbed but not measured.
-- An iterable `"perturbed_and_measured_genes"` in `uns`, containing all genes or pathways that are perturbed and also measured.
+- An iterable `"perturbed_but_not_measured_genes"` in `uns`, containing all genes that are perturbed but not measured.
+- An iterable `"perturbed_and_measured_genes"` in `uns`, containing all genes that are perturbed and also measured.
 - Expression in `.X` should be normalized and log-transformed. 
 - Raw data should be present in `raw`.
  
