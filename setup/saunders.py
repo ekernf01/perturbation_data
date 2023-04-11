@@ -15,10 +15,7 @@
 # - exclude low-expressed genes and select HVG
 # - visualize
 # 
-# Specify the working directory explicitly.
 import os
-os.chdir("/home/ekernf01/Desktop/jhu/research/projects/perturbation_prediction/cell_type_knowledge_transfer/perturbation_data")
-
 import warnings
 warnings.filterwarnings('ignore')
 import regex as re
