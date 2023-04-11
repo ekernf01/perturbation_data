@@ -5,16 +5,26 @@ import h5py
 import scanpy as sc
 import anndata
 import typing 
+import gc
+from joblib import Parallel, delayed, cpu_count, dump
 
 # For QC
 import os, sys
 import itertools as it
+import scipy
 from scipy.stats import spearmanr, pearsonr, rankdata, f_oneway, ttest_ind
 from statsmodels.stats.multitest import multipletests
 from sklearn.metrics import mutual_info_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
+
+def try_toarray(x):
+    try:
+        x = x.toarray()
+    except Exception:
+        pass
+    return x
 
 
 def simplify_categorical(x:pd.DataFrame, column: str, max_categories: int = 20, filler: str = "other", new_column: str = None):
@@ -101,7 +111,7 @@ def read_cmap(expression_file, gene_metadata, instance_metadata):
 
 
 def describe_perturbation_effect(adata: anndata.AnnData, perturbation_type, multiple_genes_hit: bool = None) -> anndata.AnnData:
-    """ Add details on perturbation effect on targeted genes
+    """ Add details about perturbation's effect on the targeted genes
 
     Args:
         adata (anndata.AnnData): A perturbation dataset
@@ -171,17 +181,19 @@ def checkConsistency(adata: anndata.AnnData,
                      perturbationType: str="overexpression", 
                      group: str=None,
                      verbose: bool=False, 
-                     do_return_pval = False):
+                     do_return_pval = False, 
+                     show_plots = False):
     """ Check whether the gene that was perturbed is actually 
     measured to be higher (if overexpressed) or lower (if knocked
-    down) or nearly zero (if knocked off).
+    down) or nearly zero (if knocked out).
     If a perturbagen is a control or is not measured, 'N/A' is labeled. 
     If a perturbagen's expression is higher or lower than all 
     control groups (matching the direction of intended perturbation),
     True is labeled; otherwise, False is labeled.
     
     Args:
-        adata (anndata.AnnData): the object to operate on.
+        adata (anndata.AnnData): the object to operate on. adata.X is expected to be normalized but not log-transformed. 
+            It is expected to be a dense array, not a sparse e.g. scipy CSR. 
         perturbation_type (str): one of {"overexpression", "knockout", "knockdown"}
         group (str, default None): a column in adata.obs to indicate sub-group of
                                    the treatment and the control.
@@ -209,7 +221,8 @@ def checkConsistency(adata: anndata.AnnData,
         plt.axvline(0, 0, 1, color='red', label="No Change")
         plt.xlabel("Log2 Fold Change (perturbed/control)")
         plt.legend()
-        plt.show()
+        if show_plots:
+            plt.show()
         
     
     assert perturbationType in ["overexpression", "knockout", "knockdown"]
@@ -231,13 +244,11 @@ def checkConsistency(adata: anndata.AnnData,
         if group:        # Only compare treatment to within-group controls (to limit variability)
             assert group in adata.obs.columns
             control = normX[adata.obs.is_control & (adata.obs[group] == adata.obs[group][row]), :]
-        
-
-        logFC[row] = np.log2(normX[row, loc[0]] / np.median(control[:, loc]))   
+        logFC[row] = np.log2(try_toarray(normX[row, loc[0]]) / np.median(try_toarray(control[:, loc])))   
         has_same_perturbation = perturbagen == adata.obs.perturbation
         pval[row] = ttest_ind(
-            np.log2(normX[has_same_perturbation, loc[0]]), 
-            np.log2(control[:, loc[0]]), 
+            np.log2(try_toarray(normX[has_same_perturbation, loc[0]])), 
+            np.log2(try_toarray(control[:, loc[0]])), 
             equal_var=True,
         ).pvalue
         if perturbationType == "overexpression" and normX[row, loc] > np.median(control[:, loc]):
@@ -277,12 +288,13 @@ def computeCorrelation(adata: anndata.AnnData,
                        verbose: bool=False, 
                        group: str=None):
     """
-    Assume the existence of **is_control** in adata.obs. Compute the
-    correlation between biological replicates on scale of log fold change. For each 
+    Compute the correlation between biological replicates on scale of log fold change. For each 
     set of perturbation, the final correlation score is the median of 
     correlation between all pair-wise combinations of perturbation expression
     and control expression. Both Spearman and Pearson correlation are
     computed.
+
+    This assume the existence of "is_control" in adata.obs. 
     """
     
     def computelogFC(t1, t2, c1, c2):
@@ -290,8 +302,10 @@ def computeCorrelation(adata: anndata.AnnData,
         validGeneEntry = np.isfinite(logFC1) & np.isfinite(logFC2)
         logFC1 = logFC1[validGeneEntry]
         logFC2 = logFC2[validGeneEntry]
-        
-        return spearmanr(logFC1, logFC2)[0], pearsonr (logFC1, logFC2)[0]
+        if len(logFC1)>1:
+            return spearmanr(logFC1, logFC2)[0], pearsonr (logFC1, logFC2)[0]
+        else:
+            return -999,-999
     
     
     normX        = adata.X.copy()
@@ -316,8 +330,8 @@ def computeCorrelation(adata: anndata.AnnData,
             if group:
                 assert group in adata.obs.columns
                 g1, g2 = adata.obs[group][row1], adata.obs[group][row2]
-                c1 = np.median(normX[(adata.obs.is_control) & (adata.obs[group] == g1), :], axis=0)
-                c2 = np.median(normX[(adata.obs.is_control) & (adata.obs[group] == g2), :], axis=0)
+                c1 = np.median(try_toarray(normX[(adata.obs.is_control) & (adata.obs[group] == g1), :]), axis=0)
+                c2 = np.median(try_toarray(normX[(adata.obs.is_control) & (adata.obs[group] == g2), :]), axis=0)
                 s, p = computelogFC(r1, r2, c1, c2)
             else:
                 c1 = np.median(controlExpr.copy(), axis=0)
@@ -341,8 +355,7 @@ def computeCorrelation(adata: anndata.AnnData,
 
         status  = np.tile(adata.obs['consistentW/Perturbation'], 2)[:, np.newaxis]
         logFC   = np.tile(adata.obs['logFC']                   , 2)[:, np.newaxis]
-        corrDF  = pd.DataFrame(np.hstack([corrVal, corrStr, logFC, status]), 
-                               columns=["Value", "Name", "logFC", "ConsistentW/Perturbation"])
+        corrDF  = pd.DataFrame(np.hstack([corrVal, corrStr, logFC, status]), columns=["Value", "Name", "logFC", "ConsistentW/Perturbation"])
         corrDF[['Value']] = corrDF[['Value']].apply(pd.to_numeric)
         corrDF[['logFC']] = corrDF[['logFC']].apply(pd.to_numeric)
         delCol  = ((corrDF["Value"] == -999) | 
@@ -362,33 +375,99 @@ def computeCorrelation(adata: anndata.AnnData,
         axes[1, 1].remove()
         axes[1, 2].remove()
         axlong = fig.add_subplot(gs[:, -1])
-
-        sns.violinplot(data=corrDF, 
-                       x="Value", 
-                       y="Name", 
-                       hue="ConsistentW/Perturbation", 
-                       split=False,
-                       cut=0,
-                       scale="count",
-                       ax=axlong)
-        axlong.set_xlabel("Correlation Scores")
-        
-        sns.scatterplot(data=corrDF[corrDF["Name"] == "Spearman"],
-                        x="Value",
-                        y="logFC",
+        try:
+            sns.violinplot(data=corrDF, 
+                        x="Value", 
+                        y="Name", 
                         hue="ConsistentW/Perturbation", 
-                        # style="ConsistentW/Perturbation", 
-                        ax=axes[1,0])
-        axes[1,0].set_xlabel("Spearman Correlation")
-
-        plt.show()
-        
+                        split=False,
+                        cut=0,
+                        scale="count",
+                        ax=axlong)
+            axlong.set_xlabel("Correlation Scores")
+            
+            sns.scatterplot(data=corrDF[corrDF["Name"] == "Spearman"],
+                            x="Value",
+                            y="logFC",
+                            hue="ConsistentW/Perturbation", 
+                            # style="ConsistentW/Perturbation", 
+                            ax=axes[1,0])
+            axes[1,0].set_xlabel("Spearman Correlation")
+            plt.show()
+        except Exception: #input is empty
+            pass
     return spearmanList, pearsonList
 
+def aggregate_by_perturbation(adata: anndata.AnnData, group_by: list, use_raw = True):
+    """ Compute pseudo-bulk expression by adding raw counts.
+
+    Args:
+        adata (anndata.AnnData): Object with raw counts in adata.raw.X
+        group_by (list of st): names of categorical columns in adata.obs to group by. Typically starts with "perturbation". 
+
+    Returns:
+        anndata.AnnData: Pseudo-bulk expression
+    """
+    # Make sure we have all the metadata we will need
+    output_metadata_fields = list(set(group_by).union({"perturbation", 'is_control'}))
+    if "perturbation" not in group_by:
+        print("group_by should normally contain 'perturbation'. If any groups contain more than one perturbation, output metadata will be oversimplified.")
+    assert all([g in adata.obs.columns for g in output_metadata_fields]), "Each element of group_by must be in adata.obs.columns, and 'perturbation' and 'is_control' are also required."
+    assert "group_index" not in group_by, "Apologies: adata.obs['group_index'] is reserved for internal use. Please rename this column."
+    # Group the cells
+    print("grouping", flush = True)
+    for o in group_by:
+        adata.obs[o] = adata.obs[o].astype("str")
+    groups = adata.obs.groupby(output_metadata_fields)
+    groups = groups.size().reset_index().rename(columns={0:'count'})
+    groups["group_index"] = groups.index
+    print(f"Found {len(groups.index)} groups")
+    print("Number of groups: " + str(groups.shape[0]))
+    # This merge yields a fast mapping from cells (input) to groups (output), but for speed,
+    # we want a fast mapping from each group (input) to the cells in it (output).
+    print("mapping groups to cells", flush = True)
+    adata.obs = pd.merge(adata.obs, groups, how = "left")
+    cells_by_group = {g:[] for g in groups["group_index"]}
+    assert all(g in cells_by_group for g in adata.obs["group_index"]), "Unexpected group found. Please report this error."
+    for c in adata.obs.index:
+        try:
+            cells_by_group[adata.obs.loc[c, "group_index"]].append(c)
+        except Exception:
+            print(adata.obs.loc[c,:].T)
+            raise KeyError(f"Cell {c} has a bad group assignment or bad metadata (see print output).")
+    # Finally, sum raw counts per group
+    print("summing", flush = True)
+    def do_one(i,g):
+        just_ones = [1 for _ in cells_by_group[g]]
+        just_zero = [0 for _ in cells_by_group[g]]
+        indicator = scipy.sparse.csr_matrix((just_ones, (just_zero, cells_by_group[g])), shape = (1, adata.n_obs))
+        if use_raw:
+            return indicator.dot(adata.raw.X)
+        else:
+            return indicator.dot(adata.X)
+    results = Parallel(n_jobs=cpu_count()-1, verbose = 1, backend="loky")(
+        delayed(do_one)(i,g)
+        for i,g in enumerate(groups["group_index"].unique())
+    )
+    # Put list of results in a matrix
+    print("reshaping")
+    newX = scipy.sparse.lil_matrix((len(groups["group_index"].unique()), adata.n_vars))
+    for i,g in enumerate(groups["group_index"].unique()):
+        newX[i,:] = results[i]
+        results[i] = []
+    newX = newX.tocsr()
+    newAdata    = sc.AnnData(
+        newX, 
+        var=adata.var.copy(),
+        obs=groups,
+    )
+    newAdata.obs['is_control_int'] = [int(x) for x in newAdata.obs["is_control"]]
+    gc.collect()
+    return newAdata
 
 # ============================= separator ============================= #
 #                                                                       #
-#            Here is the START of code that computes bigness            #
+#     Here is the START of code that computes global effect size        #
 #                                                                       #
 # ===================================================================== #
 
@@ -616,7 +695,7 @@ def quantifyEffect(
 
 
 def checkPerturbationEffectMetricCorrelation(adata: anndata.AnnData, metrics): 
-
+    """Compute correlation between different measures of global effect size"""
     for (n1, n2) in it.combinations(metrics, r=2):
         assert n1 in adata.obs
         assert n2 in adata.obs
@@ -641,10 +720,11 @@ def checkPerturbationEffectMetricCorrelation(adata: anndata.AnnData, metrics):
     
 
 def visualizePerturbationEffect(adata, metrics, TFDict, EpiDict):
-    """ Everything is artificially shifted right by one 
-    since a non-visible bar (with height=0) is
-    inserted at the beginning. This is done to coerce the
-    legend color for TF/Chromatin Modifier to be 'orange' """
+    """Visualize effect size versus type of perturbation, e.g. TF versus non-TF"""
+    # Everything is artificially shifted right by one 
+    # since a non-visible bar (with height=0) is
+    # inserted at the beginning. This is done to coerce the
+    # legend color for TF/Chromatin Modifier to be 'orange' 
     keepRow      = (~adata.obs.perturbation.duplicated() & (~adata.obs.is_control)) 
     perturbagens = adata[keepRow].obs.perturbation
     colorDict    = {'No': '#1f77b4', 'Yes': '#ff7f0e'}
@@ -688,6 +768,7 @@ def visualizePerturbationMetadata(
     xlim=None, 
     s=30
 ):
+    """Plot characteristics of each perturbation, e.g. correlation between replicates or global effect size."""
     if xlim is None:
         span = adata.obs[x].max() - adata.obs[x].min()
         xlim = [adata.obs[x].min()-span/10, adata.obs[x].max()+span/10]
