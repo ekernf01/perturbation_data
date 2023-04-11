@@ -15,31 +15,16 @@
 # - exclude low-expressed genes and select HVG
 # - visualize
 # 
-import os
 import warnings
 warnings.filterwarnings('ignore')
-import regex as re
-import os
 import gc
-import shutil
 import importlib
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scanpy as sc
 import anndata 
-import seaborn as sns
-from scipy.stats import spearmanr as spearmanr
-from IPython.display import display, HTML
-
-import os, sys
-import itertools as it
-from scipy.stats import spearmanr, pearsonr, rankdata, f_oneway
-from statsmodels.stats.multitest import multipletests
-from sklearn.metrics import mutual_info_score
-import matplotlib.pyplot as plt
-import seaborn as sns
+import os
 from collections import Counter
 
 # local
@@ -67,6 +52,7 @@ print("Setting up AnnData objects")
 expression_quantified = {}
 try:
     expression_quantified["train"] = sc.read_h5ad(os.path.join("not_ready/saunders", "train_working.h5ad"))
+    print("h5ad found")
 except:
     expression_quantified["train"] = anndata.AnnData(sc.read_mtx("not_ready/saunders/GSE202639_reference_raw_counts.mtx.gz").T, dtype=np.float32)
     expression_quantified["train"].var = pd.read_csv("not_ready/saunders/GSE202639_reference_gene_metadata.csv.gz")
@@ -76,6 +62,7 @@ except:
 
 try:
     expression_quantified["test"] = sc.read_h5ad(os.path.join("not_ready/saunders", "test_working.h5ad"))
+    print("h5ad found")
 except:
     expression_quantified["test"] = sc.AnnData(sc.read_mtx("not_ready/saunders/GSE202639_zperturb_full_raw_counts.mtx.gz").T, dtype=np.float32)         
     expression_quantified["test"].var = pd.read_csv("not_ready/saunders/GSE202639_zperturb_full_gene_metadata.csv.gz")
@@ -116,6 +103,7 @@ print("Aggregating")
 for t in ("train", "test"):
     try:
         X = sc.read_h5ad(os.path.join("not_ready/saunders", f"{t}_aggregated.h5ad"))
+        print("Aggregated data found.")
     except:
         X = ingestion.aggregate_by_perturbation(
             adata = expression_quantified[t],
