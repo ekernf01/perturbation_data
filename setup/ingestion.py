@@ -442,7 +442,9 @@ def aggregate_by_perturbation(adata: anndata.AnnData, group_by: list, use_raw = 
         just_zero = [0 for _ in cells_by_group[g]]
         indicator = scipy.sparse.csr_matrix((just_ones, (just_zero, cells_by_group[g])), shape = (1, adata.n_obs))
         return indicator.dot(X)
-    results = Parallel(n_jobs=cpu_count()-1, verbose = 1, backend="loky")(
+    # I use 8x CPU count because this code make poor use of available cores and the memmap makes 
+    # extra threads nearly free memory-wise. 
+    results = Parallel(n_jobs=8*cpu_count(), verbose = 1, backend="loky")(
         delayed(do_one)(i,g, X = adata.raw.X if use_raw else adata.X)
         for i,g in enumerate(groups["group_index"].unique())
     )
