@@ -437,16 +437,13 @@ def aggregate_by_perturbation(adata: anndata.AnnData, group_by: list, use_raw = 
             raise KeyError(f"Cell {c} has a bad group assignment or bad metadata (see print output).")
     # Finally, sum raw counts per group
     print("summing", flush = True)
-    def do_one(i,g):
+    def do_one(i,g,X):
         just_ones = [1 for _ in cells_by_group[g]]
         just_zero = [0 for _ in cells_by_group[g]]
         indicator = scipy.sparse.csr_matrix((just_ones, (just_zero, cells_by_group[g])), shape = (1, adata.n_obs))
-        if use_raw:
-            return indicator.dot(adata.raw.X)
-        else:
-            return indicator.dot(adata.X)
+        return indicator.dot(X)
     results = Parallel(n_jobs=cpu_count()-1, verbose = 1, backend="loky")(
-        delayed(do_one)(i,g)
+        delayed(do_one)(i,g, X = adata.raw.X if use_raw else adata.X)
         for i,g in enumerate(groups["group_index"].unique())
     )
     # Put list of results in a matrix
