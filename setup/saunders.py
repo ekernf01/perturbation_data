@@ -162,7 +162,8 @@ for t in ("train", "test"):
     sc.pp.neighbors(expression_quantified[t])
     sc.tl.umap(expression_quantified[t])
     print(f"Plotting {t}")
-    vars_to_show = ["embryo", "timepoint", "perturbation", "cell_type_broad", "cell_type_sub"]
+    expression_quantified[t].obs["cell_type"] = expression_quantified[t].obs["cell_type_broad"]
+    vars_to_show = ["embryo", "timepoint", "perturbation", "cell_type", "cell_type_broad", "cell_type_sub"]
     figs = sc.pl.umap(expression_quantified[t], color = vars_to_show, show = False)
     try:
         os.makedirs(f"../perturbations/saunders/{t}", exist_ok=True)
