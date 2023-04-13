@@ -51,24 +51,24 @@ sc.settings.figdir = finalDataFileFolder
 print("Setting up AnnData objects")
 expression_quantified = {}
 try:
-    expression_quantified["train"] = sc.read_h5ad(os.path.join("not_ready/saunders", "train_working.h5ad"))
+    expression_quantified["train"] = sc.read_h5ad(os.path.join("../not_ready/saunders", "train_working.h5ad"))
     print("h5ad found")
 except:
-    expression_quantified["train"] = anndata.AnnData(sc.read_mtx("not_ready/saunders/GSE202639_reference_raw_counts.mtx.gz").T, dtype=np.float32)
-    expression_quantified["train"].var = pd.read_csv("not_ready/saunders/GSE202639_reference_gene_metadata.csv.gz")
-    expression_quantified["train"].obs = pd.read_csv("not_ready/saunders/GSE202639_reference_cell_metadata.csv.gz")
+    expression_quantified["train"] = anndata.AnnData(sc.read_mtx("../not_ready/saunders/GSE202639_reference_raw_counts.mtx.gz").T, dtype=np.float32)
+    expression_quantified["train"].var = pd.read_csv("../not_ready/saunders/GSE202639_reference_gene_metadata.csv.gz")
+    expression_quantified["train"].obs = pd.read_csv("../not_ready/saunders/GSE202639_reference_cell_metadata.csv.gz")
     os.makedirs(finalDataFileFolder, exist_ok = True)
-    expression_quantified["train"].write_h5ad(os.path.join("not_ready/saunders", "train_working.h5ad"))
+    expression_quantified["train"].write_h5ad(os.path.join("../not_ready/saunders", "train_working.h5ad"))
 
 try:
-    expression_quantified["test"] = sc.read_h5ad(os.path.join("not_ready/saunders", "test_working.h5ad"))
+    expression_quantified["test"] = sc.read_h5ad(os.path.join("../not_ready/saunders", "test_working.h5ad"))
     print("h5ad found")
 except:
-    expression_quantified["test"] = sc.AnnData(sc.read_mtx("not_ready/saunders/GSE202639_zperturb_full_raw_counts.mtx.gz").T, dtype=np.float32)         
-    expression_quantified["test"].var = pd.read_csv("not_ready/saunders/GSE202639_zperturb_full_gene_metadata.csv.gz")
-    expression_quantified["test"].obs = pd.read_csv("not_ready/saunders/GSE202639_zperturb_full_cell_metadata.csv.gz")
+    expression_quantified["test"] = sc.AnnData(sc.read_mtx("../not_ready/saunders/GSE202639_zperturb_full_raw_counts.mtx.gz").T, dtype=np.float32)         
+    expression_quantified["test"].var = pd.read_csv("../not_ready/saunders/GSE202639_zperturb_full_gene_metadata.csv.gz")
+    expression_quantified["test"].obs = pd.read_csv("../not_ready/saunders/GSE202639_zperturb_full_cell_metadata.csv.gz")
     os.makedirs(finalDataFileFolder, exist_ok = True)
-    expression_quantified["test"].write_h5ad(os.path.join("not_ready/saunders", "test_working.h5ad"))
+    expression_quantified["test"].write_h5ad(os.path.join("../not_ready/saunders", "test_working.h5ad"))
 
 expression_quantified["train"].obs["perturbation"] = "control"
 expression_quantified["train"].obs["is_control"] = True
@@ -83,8 +83,6 @@ expression_quantified["test"].obs["is_control"] = [g=="ctrl-inj" for g in expres
 for t in ("train", "test"):
     expression_quantified[t].obs["is_control_int"] = [float(x) for x in expression_quantified[t].obs["is_control"]]
     expression_quantified[t].obs_names = [str(s) for s in expression_quantified[t].obs_names] 
-    expression_quantified[t].var.index = expression_quantified[t].var["gene_short_name"]
-
 
 # ### Remove low-quality cells and low-expressed genes
 # 
@@ -94,15 +92,22 @@ print("Removing unhashed cells")
 for t in ("train", "test"):
     for f in ("timepoint", "embryo", "cell_type_sub"):
         expression_quantified[t] = expression_quantified[t][pd.notnull(expression_quantified[t].obs[f]),:]
-    sc.pp.filter_genes(expression_quantified[t], min_counts=1000, inplace=True)
+        sc.pp.filter_genes(expression_quantified[t], min_counts=1000, inplace=True)
+# Keep the same genes in train and test
+shared_genes = set(list(expression_quantified["test"].var_names)).intersection(
+    set(list(expression_quantified["train"].var_names)))
+shared_genes = list(shared_genes)
+for t in ("train", "test"):
+    expression_quantified[t] = expression_quantified[t][:, shared_genes]
     print(f"{t} shape:")
     print(expression_quantified[t].shape)
+    expression_quantified[t].var.index = expression_quantified[t].var["gene_short_name"]
 
 # ### Aggregate
 print("Aggregating")
 for t in ("train", "test"):
     try:
-        X = sc.read_h5ad(os.path.join("not_ready/saunders", f"{t}_aggregated.h5ad"))
+        X = sc.read_h5ad(os.path.join("../not_ready/saunders", f"{t}_aggregated_new.h5ad"))
         print("Aggregated data found.")
     except:
         X = ingestion.aggregate_by_perturbation(
@@ -112,7 +117,7 @@ for t in ("train", "test"):
         )
     print(f"done {t}")
     expression_quantified[t] = X
-    expression_quantified[t].write_h5ad(os.path.join("not_ready/saunders", f"{t}_aggregated.h5ad"))
+    expression_quantified[t].write_h5ad(os.path.join("../not_ready/saunders", f"{t}_aggregated.h5ad"))
     gc.collect()
 # ### Normalize
 print("Normalizing")
@@ -160,8 +165,8 @@ for t in ("train", "test"):
     vars_to_show = ["embryo", "timepoint", "perturbation", "cell_type_broad", "cell_type_sub"]
     figs = sc.pl.umap(expression_quantified[t], color = vars_to_show, show = False)
     try:
-        os.makedirs(f"perturbations/saunders/{t}", exist_ok=True)
-        [fig.figure.savefig(f"perturbations/saunders/{t}/{v}.pdf") for fig,v in zip(figs, vars_to_show)]
+        os.makedirs(f"../perturbations/saunders/{t}", exist_ok=True)
+        [fig.figure.savefig(f"../perturbations/saunders/{t}/{v}.pdf") for fig,v in zip(figs, vars_to_show)]
     except Exception as e:
         print(f"Plots failed with error {repr(e)}")
-    expression_quantified[t].write_h5ad(os.path.join("perturbations/saunders", f"{t}.h5ad"))
+    expression_quantified[t].write_h5ad(os.path.join("../perturbations/saunders", f"{t}.h5ad"))

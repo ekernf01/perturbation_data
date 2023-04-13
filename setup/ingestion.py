@@ -429,31 +429,22 @@ def aggregate_by_perturbation(adata: anndata.AnnData, group_by: list, use_raw = 
     adata.obs = pd.merge(adata.obs, groups, how = "left")
     cells_by_group = {g:[] for g in groups["group_index"]}
     assert all(g in cells_by_group for g in adata.obs["group_index"]), "Unexpected group found. Please report this error."
-    for c in adata.obs.index:
+    for i,c in enumerate(adata.obs.index):
         try:
-            cells_by_group[adata.obs.loc[c, "group_index"]].append(c)
+            cells_by_group[adata.obs.loc[c, "group_index"]].append(i)
         except Exception:
             print(adata.obs.loc[c,:].T)
-            raise KeyError(f"Cell {c} has a bad group assignment or bad metadata (see print output).")
+            raise KeyError(f"Cell {(i,c)} has a bad group assignment or bad metadata (see print output).")
     # Finally, sum raw counts per group
     print("summing", flush = True)
-    def do_one(i,g,X):
-        just_ones = [1 for _ in cells_by_group[g]]
-        just_zero = [0 for _ in cells_by_group[g]]
-        indicator = scipy.sparse.csr_matrix((just_ones, (just_zero, cells_by_group[g])), shape = (1, adata.n_obs))
-        return indicator.dot(X)
-    # I use 8x CPU count because this code make poor use of available cores and the memmap makes 
-    # extra threads nearly free memory-wise. 
-    results = Parallel(n_jobs=8*cpu_count(), verbose = 1, backend="loky")(
-        delayed(do_one)(i,g, X = adata.raw.X if use_raw else adata.X)
+    newX = scipy.sparse.lil_matrix((len(groups["group_index"].unique()), adata.n_vars))
+    def do_one(i,g,X, newX):
+        newX[i,:] = X[cells_by_group[g], :].sum(axis = 0)
+        return 
+    _ = Parallel(n_jobs=cpu_count()-1, verbose = 1, backend="loky")(
+        delayed(do_one)(i,g, X = adata.raw.X if use_raw else adata.X, newX = newX)
         for i,g in enumerate(groups["group_index"].unique())
     )
-    # Put list of results in a matrix
-    print("reshaping")
-    newX = scipy.sparse.lil_matrix((len(groups["group_index"].unique()), adata.n_vars))
-    for i,g in enumerate(groups["group_index"].unique()):
-        newX[i,:] = results[i]
-        results[i] = []
     newX = newX.tocsr()
     newAdata    = sc.AnnData(
         newX, 
