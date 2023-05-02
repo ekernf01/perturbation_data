@@ -25,6 +25,7 @@ import pandas as pd
 import scanpy as sc
 import anndata 
 import os
+import altair as alt
 from collections import Counter
 
 # local
@@ -155,19 +156,59 @@ expression_quantified["test"].obs[ "pearsonCorr"] = correlations[1]
 print("Data exploration")
 for t in ("train", "test"):
     print(f"Exploring {t}")
-    sc.pp.log1p(expression_quantified[t])
-    sc.pp.highly_variable_genes(expression_quantified[t], flavor = "seurat_v3", n_top_genes=expression_quantified[t].shape[1])
-    with warnings.catch_warnings():
-        sc.tl.pca(expression_quantified[t], n_comps=5)
-    sc.pp.neighbors(expression_quantified[t])
-    sc.tl.umap(expression_quantified[t])
-    print(f"Plotting {t}")
+    # Fix up a few key metadata fields
+    # sc.pp.calculate_qc_metrics(expression_quantified[t], inplace=True)
+    expression_quantified[t].obs["timepoint"] = expression_quantified[t].obs["timepoint"].astype("str").astype(float)
     expression_quantified[t].obs["cell_type"] = expression_quantified[t].obs["cell_type_broad"]
-    vars_to_show = ["embryo", "timepoint", "perturbation", "cell_type", "cell_type_broad", "cell_type_sub"]
-    figs = sc.pl.umap(expression_quantified[t], color = vars_to_show, show = False)
-    try:
-        os.makedirs(f"../perturbations/saunders/{t}", exist_ok=True)
-        [fig.figure.savefig(f"../perturbations/saunders/{t}/{v}.pdf") for fig,v in zip(figs, vars_to_show)]
-    except Exception as e:
-        print(f"Plots failed with error {repr(e)}")
+    expression_quantified[t].obs["cell_count"] = expression_quantified[t].obs["count"]
+    # sc.pp.log1p(expression_quantified[t])
+    # sc.pp.highly_variable_genes(expression_quantified[t], flavor = "seurat_v3", n_top_genes=expression_quantified[t].shape[1])
+    # with warnings.catch_warnings():
+    #     sc.tl.pca(expression_quantified[t], n_comps=100)
+    # sc.pp.neighbors(expression_quantified[t])
+    # sc.tl.umap(expression_quantified[t])
     expression_quantified[t].write_h5ad(os.path.join("../perturbations/saunders", f"{t}.h5ad"))
+
+expression_quantified = dict()
+for t in ("train", "test"):
+    print(f"Plotting {t}")
+    expression_quantified[t] = sc.read_h5ad(os.path.join("../perturbations/saunders", f"{t}.h5ad"))
+    vars_to_show = ["embryo", "timepoint", "perturbation", "cell_type", "cell_type_broad", "cell_type_sub", "cell_count", 'total_counts', 'log1p_total_counts']
+    for v in vars_to_show:
+        fig = sc.pl.umap(expression_quantified[t], color = v, show = False)
+        try:
+            os.makedirs(f"../perturbations/saunders/{t}", exist_ok=True)
+            fig.figure.savefig(f"../perturbations/saunders/{t}/{v}.pdf")
+        except Exception as e:
+            print(f"Plots failed with error {repr(e)}")
+
+# Study effect of perturbation differently than above (due to it being very shallow data)
+all_comparisons = dict()
+for perturbation in expression_quantified["test"].uns["perturbed_and_measured_genes"]:
+    wobblybobs = expression_quantified["test"].obs.copy()[["cell_type", "perturbation"]]
+    wobblybobs["expression"] = expression_quantified["test"][:, perturbation].X.toarray()
+    wobblybobs = wobblybobs.groupby(["cell_type", "perturbation"]).agg("mean").reset_index()
+    all_comparisons[perturbation] = wobblybobs.query(f'perturbation=="{perturbation}"').merge(
+        wobblybobs.copy().query('perturbation == "control"')[["expression", "cell_type"]], 
+        left_on = "cell_type",
+        right_on = "cell_type", 
+        suffixes = ("KO", "control")
+    )
+wobblybobs = pd.concat(all_comparisons).reset_index()
+wobblybobs["difference"] = wobblybobs["expressionKO"] - wobblybobs["expressioncontrol"] 
+alt.data_transformers.disable_max_rows()
+KO_effect = alt.Chart(data=wobblybobs).mark_circle(size = 300).encode(
+    x = "expressioncontrol",
+    y = "difference", 
+    color = alt.Color("cell_type", scale = alt.Scale(scheme='category20')),
+).properties(
+    width=100,
+    height=100
+).facet(
+    facet = "perturbation",
+    columns = 4
+).resolve_scale(
+    x='independent',
+    y='independent'
+)
+KO_effect.save("../perturbations/saunders/test/KO_transcript_level.svg")

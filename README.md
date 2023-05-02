@@ -31,8 +31,9 @@ Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/
 
 ### Adding new datasets and setting clear expectations
 
-Every AnnData object in the collection conforms to certain expectations. This list is in progress and this README may be out of date, but you can use at the function `load_perturbations.check_perturbation_dataset()` in the loader package for authoritative details. To add new datasets or alter ingestion of a current dataset, look at the notebooks in `setup.py` for examples, and ensure that the result ultimately passes the assertions done by `check_perturbation_dataset()`. 
+Every AnnData object in the collection conforms to certain expectations. This list is in progress and this README may be out of date, but you can use at the function `load_perturbations.check_perturbation_dataset()` in the loader package for authoritative details. To add new datasets or alter ingestion of a current dataset, look at the notebooks in `setup.py` for examples, and ensure that the result ultimately passes the assertions done by `check_perturbation_dataset()`. Here are some key requirements.
 
+- Metadata columns `timepoint` and `cell_type` for time-series datasets (required by [PRESCIENT](https://cgs.csail.mit.edu/prescient/file_formats/))
 - A column `"perturbation"` in `.obs`, dtype `str`, indicating what gene or genes are perturbed (e.g. `"FOXN1"` or `"FOXN1,PAX9"`).
 - A boolean column in `.obs` called `"is_control"`, with the obvious meaning
 - An iterable `"perturbed_but_not_measured_genes"` in `uns`, containing all genes that are perturbed but not measured.

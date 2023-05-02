@@ -186,10 +186,9 @@ def checkConsistency(adata: anndata.AnnData,
     """ Check whether the gene that was perturbed is actually 
     measured to be higher (if overexpressed) or lower (if knocked
     down) or nearly zero (if knocked out).
-    If a perturbagen is a control or is not measured, 'N/A' is labeled. 
-    If a perturbagen's expression is higher or lower than all 
-    control groups (matching the direction of intended perturbation),
-    True is labeled; otherwise, False is labeled.
+    If an observation is a control or if the perturbed gene is not measured, 'N/A' is labeled. 
+    If a perturbagen's expression is higher or lower than the median control (matching 
+    the direction of intended perturbation), it is labeled True. Otherwise, False. 
     
     Args:
         adata (anndata.AnnData): the object to operate on. adata.X is expected to be normalized but not log-transformed. 
@@ -266,11 +265,12 @@ def checkConsistency(adata: anndata.AnnData,
             g.legend(loc='lower right', bbox_to_anchor=(1.45, 0), ncol=1)
             plt.title(f"{perturbagen} {perturbationType}")
             plt.show()
-            
+
+    # The fold changes are computed via the following logic.  
     # NaN -> treatment = 0, control = 0
     # posInf -> treatment > 0, control = 0 
     # negInf -> treatment = 0, control > 0 (knocked out)
-    consistencyStatus[np.isnan(logFC)] = "No"
+    consistencyStatus[np.isnan(logFC)] = "NA"
     logFC[np.isnan(logFC)] = 0
     logFC[np.isposinf(logFC)] = np.nanmedian(logFC[(logFC > 0) & (logFC != -999) & np.isfinite(logFC)])
     logFC[np.isneginf(logFC)] = np.nanmedian(logFC[(logFC < 0) & (logFC != -999) & np.isfinite(logFC)])
@@ -437,14 +437,16 @@ def aggregate_by_perturbation(adata: anndata.AnnData, group_by: list, use_raw = 
             raise KeyError(f"Cell {(i,c)} has a bad group assignment or bad metadata (see print output).")
     # Finally, sum raw counts per group
     print("summing", flush = True)
-    newX = scipy.sparse.lil_matrix((len(groups["group_index"].unique()), adata.n_vars))
-    def do_one(i,g,X, newX):
-        newX[i,:] = X[cells_by_group[g], :].sum(axis = 0)
-        return 
-    _ = Parallel(n_jobs=cpu_count()-1, verbose = 1, backend="loky")(
-        delayed(do_one)(i,g, X = adata.raw.X if use_raw else adata.X, newX = newX)
+    def do_one(i, g, X):
+        return X[cells_by_group[g], :].sum(axis = 0) 
+    rows = Parallel(n_jobs=cpu_count()-1, verbose = 1, backend="loky")(
+        delayed(do_one)(i,g, X = adata.raw.X if use_raw else adata.X)
         for i,g in enumerate(groups["group_index"].unique())
     )
+    print("collecting", flush = True)
+    newX = scipy.sparse.lil_matrix((len(groups["group_index"].unique()), adata.n_vars))
+    for i,g in enumerate(groups["group_index"].unique()):
+       newX[i,:] = rows[i]
     newX = newX.tocsr()
     newAdata    = sc.AnnData(
         newX, 
@@ -679,7 +681,7 @@ def quantifyEffect(
 
 # ============================= separator ============================= #
 #                                                                       #
-#              Here is the END of code that computes bigness            #
+#       Here is the END of code that computes global effect size        #
 #                                                                       #
 # ===================================================================== #
 
