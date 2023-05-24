@@ -31,4 +31,7 @@ Li iAssembloid,timeseries,no,CRISPRi on iAssembloids containing neurons and glia
 dixit,perturbations,yes,TF perturbations in bone-marrow dendritic cells,same as test,https://doi.org/10.1016/j.cell.2016.11.038,same as test,Obtained from GEARS,24,knockout,??,yes,no,maybe,no,mouse,no,no,no
 adamson,perturbations,yes,84 knockdowns related to ER stress and UPR,same as test,https://doi.org/10.1016/j.cell.2016.11.048,same as test,Obtained from GEARS,82,knockdown,??,yes,no,maybe,no,human,no,no,no
 norman,perturbations,no,"All single and pairwise overexpressions of a set of 112 fitness-altering TF’s in K562 cells, done with CRISPRa.",same as test,https://doi-org.proxy1.library.jhu.edu/10.1126/science.aax4438,same as test,Obtained from GEARS,112,Overexpression,??,yes,no,maybe,no,human,no,no,no
-dcdfg_test,perturbations,yes,Completely synthetic; expected to yield exactly correct results with DCD-FG,na,na,na,Synthetic,na,knockdown,Steady-state,na,na,na,na,na,no,no,no
+dcdfg_test,perturbations,yes,Completely synthetic; expected to yield exactly correct results with DCD-FG,na,na,na,Simulated,na,knockdown,Steady-state,na,na,na,na,na,no,no,no
+simulation_100_steps,perturbations,yes,Completely synthetic,na,na,na,Simulated,na,Overexpression,na,na,na,na,na,na,no,no,no
+simulation_1_steps,perturbations,yes,Completely synthetic,na,na,na,Simulated,na,Overexpression,na,na,na,na,na,na,no,no,no
+simulation_realistic0,perturbations,yes,Fitted values on nakatake data,na,na,na,Simulated,na,Overexpression,na,na,na,na,na,na,no,no,no
