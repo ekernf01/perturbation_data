@@ -51,48 +51,51 @@ celloracle_network = celloracle_network.loc[celloracle_network.index, celloracle
 effect_size = 0.1
 F = np.array(celloracle_network)*effect_size
 eigenstuff = np.linalg.eig(F)
-max_index = np.argmax(eigenstuff[0])
-F = F / np.abs(eigenstuff[0][2])
-X0 = eigenstuff[1][:, 2]
-assert all(1==np.round(F.dot(X0) / X0)), "Dominant eigenpair for F should be 1, X0."
+max_index = np.argmax(np.abs(eigenstuff[0]))
+F = 0.01*F / np.abs(eigenstuff[0][2])
+X0 = 0*eigenstuff[1][:, 2]
 X0 = np.array([X0,X0,X0,X0])
 
 # Create both steady-state and single-step data
-for num_steps in [1, 100]:
-    expression_quantified, R,G,Q,F, latent_dimension = ggrn_autoregressive.simulate_autoregressive(F = F, num_steps = num_steps, initial_state=X0)
+for noise_sd in [0, 1]:
+    for num_steps in [1, 10, 100]:
+        expression_quantified, R,G,Q,F, latent_dimension = ggrn_autoregressive.simulate_autoregressive(
+            F = F, 
+            num_steps = num_steps, 
+            initial_state=X0,
+            expression_level_after_perturbation = 1
+        )
+        print(np.linalg.norm(expression_quantified.X[expression_quantified.obs["is_control"], :]))
+        print(np.linalg.norm(expression_quantified.X))
+        expression_quantified.X = expression_quantified.X + noise_sd*np.random.standard_normal(expression_quantified.X.shape)
+        # When checking these data, the benchmarking and ggrn framework will typically assume it's on 
+        # the scale of logged gene expression data, so certainly no values above 15.
+        expression_quantified.uns["skip_log_check"] = True
 
-    # When checking these data, the benchmarking and ggrn framework will typically assume it's on 
-    # the scale of logged gene expression data, so certainly no values above 15.
-    expression_quantified.uns["skip_log_check"] = True
+        # Fix metadata
+        expression_quantified.obs.loc[expression_quantified.obs["perturbation"]=="control",  "is_control"] = True
+        expression_quantified.var.index = expression_quantified.var["gene_name"] = celloracle_network.index
+        not_control = ~expression_quantified.obs["is_control"]
+        expression_quantified.obs.loc[not_control, "perturbation"] = [
+            celloracle_network.index[int(g)] 
+            for g in expression_quantified.obs.loc[not_control, "perturbation"]
+        ]
 
-    # Fix metadata
-    expression_quantified.obs.loc[expression_quantified.obs["perturbation"]=="control",  "is_control"] = True
-    expression_quantified.var.index = expression_quantified.var["gene_name"] = celloracle_network.index
-    not_control = ~expression_quantified.obs["is_control"]
-    expression_quantified.obs.loc[not_control, "perturbation"] = [
-        celloracle_network.index[int(g)] 
-        for g in expression_quantified.obs.loc[not_control, "perturbation"]
-    ]
-
-    expression_quantified.obs["is_control_int"] = expression_quantified.obs["is_control"].astype("int")
-    expression_quantified.uns["perturbations_overlap"] = False
-    expression_quantified.var["highly_variable_rank"] = range(expression_quantified.n_vars)
-    perturbed_genes = set(list(expression_quantified.obs['perturbation'].unique())).difference({"control"})
-    perturbed_and_measured_genes     = perturbed_genes.intersection(expression_quantified.var.index)
-    perturbed_but_not_measured_genes = perturbed_genes.  difference(expression_quantified.var.index)
-    print("These genes were perturbed and measured:")
-    print(perturbed_and_measured_genes)
-    print("These genes were perturbed but not measured:")
-    print(perturbed_but_not_measured_genes)
-    expression_quantified.uns["perturbed_and_measured_genes"]     = list(perturbed_and_measured_genes)
-    expression_quantified.uns["perturbed_but_not_measured_genes"] = list(perturbed_but_not_measured_genes)
-    expression_quantified.raw = expression_quantified.copy()
-    expression_quantified = ingestion.describe_perturbation_effect(
-        expression_quantified, 
-        perturbation_type="overexpression", 
-        multiple_genes_hit=False,
-    )
-    # Save results
-    finalDataFileFolder = f"../perturbations/simulation_{num_steps}_steps"
-    os.makedirs(finalDataFileFolder, exist_ok = True)
-    expression_quantified.write_h5ad(os.path.join(finalDataFileFolder, "test.h5ad"))
+        expression_quantified.obs["is_control_int"] = expression_quantified.obs["is_control"].astype("int")
+        expression_quantified.uns["perturbations_overlap"] = False
+        expression_quantified.var["highly_variable_rank"] = range(expression_quantified.n_vars)
+        perturbed_genes = set(list(expression_quantified.obs['perturbation'].unique())).difference({"control"})
+        perturbed_and_measured_genes     = perturbed_genes.intersection(expression_quantified.var.index)
+        perturbed_but_not_measured_genes = perturbed_genes.  difference(expression_quantified.var.index)
+        expression_quantified.uns["perturbed_and_measured_genes"]     = list(perturbed_and_measured_genes)
+        expression_quantified.uns["perturbed_but_not_measured_genes"] = list(perturbed_but_not_measured_genes)
+        expression_quantified.raw = expression_quantified.copy()
+        expression_quantified = ingestion.describe_perturbation_effect(
+            expression_quantified, 
+            perturbation_type="overexpression", 
+            multiple_genes_hit=False,
+        )
+        # Save results
+        finalDataFileFolder = f"../perturbations/simulation_S={num_steps}_noisesd={noise_sd}"
+        os.makedirs(finalDataFileFolder, exist_ok = True)
+        expression_quantified.write_h5ad(os.path.join(finalDataFileFolder, "test.h5ad"))
