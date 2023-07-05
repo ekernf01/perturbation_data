@@ -1,5 +1,5 @@
 
-This is a collection of uniformly formatted perturbation datasets, accompanied by the code used to acquire and clean the data. This part of our [benchmarking project](https://github.com/ekernf01/perturbation_writing).
+This is a collection of uniformly formatted perturbation datasets, accompanied by the code used to acquire and clean the data. This part of our [benchmarking project](https://github.com/ekernf01/perturbation_benchmarking).
 
 ### Usage
 
