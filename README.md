@@ -3,31 +3,25 @@ This is a collection of uniformly formatted perturbation datasets, accompanied b
 
 ### Usage
 
-For a Python API, consult the [companion package](https://github.com/ekernf01/load_perturbations). There is no R API but you could probably use this collection from R; see format details below.
+For a Python API, consult the [companion package](https://github.com/ekernf01/load_perturbations). There is no R API but you could probably use this collection from R without too much hassle; see format details below.
 
 ### Installation
 
-The networks themselves are too big to put on GitHub. But they are on Patrick's AWS at `s3://cahanlab/eric.kernfeld/eric_laptop/research/projects/perturbation_prediction/cell_type_knowledge_transfer/perturbation_data/`. 
-
-Recommended installation: clone this repo, then find the actual datasets on AWS and place them manually in the `perturbations` directory. 
-
-Eventually, once it's public: probably a zenodo link.
+The expression data themselves are too big to put on GitHub, but they are on Zenodo (DOI: 10.5281/zenodo.8071809). 
 
 ### About the datasets 
 
 The two main commonalities among these data: they all measure the transcriptome, and every test dataset includes measurements after a genetic knockout or an overexpression experiment. The main differences among these datasets are:
 
 - What lab or project did they come from?
-- What organism are they in?
-- Do they have time-series labels?
-- Do they have splicing-based RNA velocity data?
-- Are they bulk RNA or single-cell?
+- What organism and cell type are they in?
+- How many perturbations are covered?
 
 Metadata answering those questions are stored in `perturbations/perturbations.csv`. 
 
 ### Format details 
 
-Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/latest/index.html) objects in `train.h5ad` and `test.h5ad`. Some may lack separate training data, having only `test.h5ad`. You will need to create your own train/test split by splitting the test data. When there is a separate training dataset, it will usually come from the same biological system or set of cell types as the test data, but it will lack perturbations and it may have more interesting temporal structure than the test data. 
+Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/latest/index.html) objects in `train.h5ad` and `test.h5ad`. Some may lack separate training data, having only `test.h5ad`. When there is a separate training dataset, it will usually come from the same biological system or set of cell types as the test data, but it will lack perturbations and it may have more interesting temporal structure than the test data. 
 
 ### Adding new datasets and setting clear expectations
 
