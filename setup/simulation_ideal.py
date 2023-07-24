@@ -41,8 +41,8 @@ DEFAULT_HUMAN_TFs = DEFAULT_HUMAN_TFs.loc[DEFAULT_HUMAN_TFs["Is TF?"]=="Yes", "H
 
 for true_network in [
         "celloracle_human"      ,
-        "gtex_rna"            ,
         "MARA_FANTOM4"          ,
+        "gtex_rna"            ,
         "cellnet_human_Hg1332"  ,
         "cellnet_human_Hugene"  ,
     ]:
@@ -61,7 +61,8 @@ for true_network in [
     F = np.array(network_edges)*effect_size
     eigenstuff = np.linalg.eig(F)
     max_index = np.argmax(np.abs(eigenstuff[0]))
-    F = 0.01*F / np.abs(eigenstuff[0][2])
+    max_eigenvalue = np.abs(eigenstuff[0][2]) 
+    F = 0.01*F / np.max([1, max_eigenvalue])
     X0 = 0*eigenstuff[1][:, 2] # Initialize to 0 or leading eigenvector
     X0 = np.array([X0,X0])
 
@@ -76,7 +77,7 @@ for true_network in [
                 initial_state=X0, 
                 expression_level_after_perturbation = 1
             )
-            # Censor initial state
+            # Censor initial state: we only see the final takedown
             expression_quantified = expression_quantified[expression_quantified.obs["time"]>0,:] 
             expression_quantified.X = expression_quantified.X + noise_sd*np.random.standard_normal(expression_quantified.X.shape)
             # When checking these data, the benchmarking and ggrn framework will typically assume it's on 
