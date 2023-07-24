@@ -50,7 +50,9 @@ for true_network in [
     network_edges = load_networks.load_grn_all_subnetworks(true_network)
     network_edges = load_networks.pivotNetworkLongToWide(network_edges)
     network_edges.index = network_edges["gene_short_name"]
-    # Make it square
+
+    # Make it square and TFs-only (much faster; code scales poorly with dimension because we perturb all genes)
+    network_edges = network_edges[network_edges["gene_short_name"].isin(DEFAULT_HUMAN_TFs)]
     network_edges = network_edges.loc[network_edges.index.isin(network_edges.columns), :]
     network_edges = network_edges.loc[:, network_edges.columns.isin(network_edges.index)]
     network_edges = network_edges.loc[network_edges.index, network_edges.index]
