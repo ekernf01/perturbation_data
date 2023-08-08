@@ -59,12 +59,12 @@ def convert_ens_to_symbol(ensembl_ids, gtf, strip_version = False):
     gene_identifiers = gene_identifiers.loc[:, [8]]
     gene_identifiers = gene_identifiers.drop_duplicates()
     gene_identifiers["ensembl_id"] = [[g for g in s.split(";") if "gene_id " in g][0] for s in gene_identifiers[8]]
-    gene_identifiers["ensembl_id"] = gene_identifiers["ensembl_id"].str.replace('"|gene_id| ', '')
+    gene_identifiers["ensembl_id"] = gene_identifiers["ensembl_id"].str.replace('"|gene_id| ', '', regex = True)
     if strip_version:
         gene_identifiers["ensembl_id"] = [i.split(".")[0] for i in gene_identifiers["ensembl_id"]]
     gene_identifiers["symbol"] = [[g for g in s.split(";") if "gene_name" in g] for s in gene_identifiers[8]]
     gene_identifiers["symbol"] = [l[0] if len(l)>0 else None for l in gene_identifiers["symbol"]]
-    gene_identifiers["symbol"] = gene_identifiers["symbol"].str.replace('"|gene_name| ', '')
+    gene_identifiers["symbol"] = gene_identifiers["symbol"].str.replace('"|gene_name| ', '', regex = True)
     gene_identifiers = gene_identifiers[["ensembl_id", "symbol"]]
     gene_identifiers.drop_duplicates(inplace = True)
     gene_identifiers.set_index("ensembl_id", inplace = True)
@@ -233,7 +233,7 @@ def checkConsistency(adata: anndata.AnnData,
     pval         = np.full((adata.n_obs), -999.0)
     consistencyStatus = np.full((adata.n_obs), "Yes")
     
-    for row, perturbagen in sorted(enumerate(adata.obs.perturbation), key=lambda x: x[1]):
+    for row, perturbagen in sorted(enumerate(adata.obs["perturbation"]), key=lambda x: x[1]):
         if (adata.obs.is_control[row] or perturbagen not in adata.var.index):
             consistencyStatus[row] = "NA"
             continue
@@ -244,7 +244,7 @@ def checkConsistency(adata: anndata.AnnData,
             assert group in adata.obs.columns
             control = normX[adata.obs.is_control & (adata.obs[group] == adata.obs[group][row]), :]
         logFC[row] = np.log2(try_toarray(normX[row, loc[0]]) / np.median(try_toarray(control[:, loc])))   
-        has_same_perturbation = perturbagen == adata.obs.perturbation
+        has_same_perturbation = perturbagen == adata.obs["perturbation"]
         pval[row] = ttest_ind(
             np.log2(try_toarray(normX[has_same_perturbation, loc[0]])), 
             np.log2(try_toarray(control[:, loc[0]])), 
@@ -363,7 +363,7 @@ def computeCorrelation(adata: anndata.AnnData,
                    (corrDF["logFC"] == -999))
         corrDF  = corrDF.loc[~delCol, :]
 
-        fig, axes = plt.subplots(2,3, figsize=(10,7), width_ratios=[0.4, 0.1, 0.5])
+        fig, axes = plt.subplots(2,3, figsize=(10,7))
         axes[0,0].set_xlabel("Spearman Correlation")
         axes[0,0].set_ylabel("Pearson Correlation")
         axes[0,0].scatter(x=corrDF[corrDF["Name"] == "Spearman"].iloc[:,0], 
@@ -408,27 +408,29 @@ def aggregate_by_perturbation(adata: anndata.AnnData, group_by: list, use_raw = 
     Returns:
         anndata.AnnData: Pseudo-bulk expression
     """
-    # Make sure we have all the metadata we will need
-    output_metadata_fields = list(set(group_by).union({"perturbation", 'is_control'}))
+    if "is_control" not in group_by:
+        group_by.append("is_control")
     if "perturbation" not in group_by:
         print("group_by should normally contain 'perturbation'. If any groups contain more than one perturbation, output metadata will be oversimplified.")
-    assert all([g in adata.obs.columns for g in output_metadata_fields]), "Each element of group_by must be in adata.obs.columns, and 'perturbation' and 'is_control' are also required."
+    assert all([g in adata.obs.columns for g in group_by]), "Each element of group_by must be in adata.obs.columns, and 'is_control' is also required."
     assert "group_index" not in group_by, "Apologies: adata.obs['group_index'] is reserved for internal use. Please rename this column."
     # Group the cells
     print("grouping", flush = True)
+    # Avoid weird object or categorical dtypes
     for o in group_by:
-        adata.obs[o] = adata.obs[o].astype("str")
-    groups = adata.obs.groupby(output_metadata_fields)
+        if o != "is_control":
+            adata.obs[o] = adata.obs[o].astype("str")
+    groups = adata.obs.groupby(group_by)
     groups = groups.size().reset_index().rename(columns={0:'count'})
     groups["group_index"] = groups.index
     print(f"Found {len(groups.index)} groups")
-    print("Number of groups: " + str(groups.shape[0]))
     # This merge yields a fast mapping from cells (input) to groups (output), but for speed,
     # we want a fast mapping from each group (input) to the cells in it (output).
     print("mapping groups to cells", flush = True)
     adata.obs = pd.merge(adata.obs, groups, how = "left")
     cells_by_group = {g:[] for g in groups["group_index"]}
-    assert all(g in cells_by_group for g in adata.obs["group_index"]), "Unexpected group found. Please report this error."
+    for g in adata.obs["group_index"]:
+        assert g in cells_by_group, f"Unexpected group {g} found. Please report this error."
     for i,c in enumerate(adata.obs.index):
         try:
             cells_by_group[adata.obs.loc[c, "group_index"]].append(i)
@@ -444,7 +446,7 @@ def aggregate_by_perturbation(adata: anndata.AnnData, group_by: list, use_raw = 
         for i,g in enumerate(groups["group_index"].unique())
     )
     print("collecting", flush = True)
-    newX = scipy.sparse.lil_matrix((len(groups["group_index"].unique()), adata.n_vars))
+    newX = scipy.sparse.lil_matrix((len(groups["group_index"].unique()), np.max(rows[0].shape)))
     for i,g in enumerate(groups["group_index"].unique()):
        newX[i,:] = rows[i]
     newX = newX.tocsr()
@@ -453,7 +455,7 @@ def aggregate_by_perturbation(adata: anndata.AnnData, group_by: list, use_raw = 
         var=adata.var.copy(),
         obs=groups,
     )
-    newAdata.obs['is_control_int'] = [int(x) for x in newAdata.obs["is_control"]]
+    newAdata.obs['is_control_int'] = [int(bool(x)) for x in newAdata.obs["is_control"]]
     gc.collect()
     return newAdata
 
