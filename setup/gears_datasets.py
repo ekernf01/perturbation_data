@@ -34,7 +34,7 @@ pert_types = {
     "adamson": "knockdown",
     "norman": "overexpression",
 }
-for dataset in ("dixit", "adamson", "norman"):
+for dataset in ("norman", "dixit", "adamson"):
     finalDataFileFolder = f"../perturbations/{dataset}"
     os.makedirs(finalDataFileFolder, exist_ok = True)
     try:
@@ -56,9 +56,11 @@ for dataset in ("dixit", "adamson", "norman"):
         multiple_genes_hit=True if dataset=="norman" else False,
     )
     sc.pp.highly_variable_genes(expression_quantified, flavor="seurat_v3", n_top_genes=expression_quantified.var.shape[0])
-    perturbed_genes = set(list(expression_quantified.obs['perturbation'].unique())).difference({"ctrl"})
+    breakpoint()
+    perts = set().union(*[set(p.split(",")) for p in expression_quantified.obs['perturbation'].unique()])
+    perturbed_genes = perts.difference({"ctrl"})
     perturbed_and_measured_genes = perturbed_genes.intersection(expression_quantified.var.index)
-    perturbed_but_not_measured_genes = perturbed_genes.difference(expression_quantified.var.index)
+    perturbed_but_not_measured_genes = perturbed_genes.difference(expression_quantified.var.index)    
     print("These genes were perturbed and measured:")
     print(perturbed_and_measured_genes)
     print("These genes were perturbed but not measured:")
@@ -67,6 +69,7 @@ for dataset in ("dixit", "adamson", "norman"):
     expression_quantified.uns["perturbed_but_not_measured_genes"] = list(perturbed_but_not_measured_genes)
     expression_quantified.raw = expression_quantified.copy()
     expression_quantified.write_h5ad(os.path.join(finalDataFileFolder, "test.h5ad"))
+    # Remove GEARS temp files
     try:
         shutil.rmtree("./gears_data_temp")
     except FileNotFoundError:
