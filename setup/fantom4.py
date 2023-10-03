@@ -6,8 +6,9 @@
 # This notebook prepares FANTOM4's collection of microarray data from THP-1 cells. Here we preprocess the dataset 
 # and carry out a simple exploration in scanpy. 
 # 
-# FANTOM4 data were obtained from GEA, which is the successor to the CIBEX repository named in the FANTOM4 paper's data availability statement. The URL is at 
-# https://ddbj.nig.ac.jp/public/ddbj_database/gea/experiment/E-GEAD-000/ and the download was completed on 2022 Oct 03. The following updated metadata were provided by the GEA maintainers.
+# FANTOM4 data were obtained from GEA, which is the successor to the CIBEX repository named in the FANTOM4 paper's data 
+# availability statement. The URL is at https://ddbj.nig.ac.jp/public/ddbj_database/gea/experiment/E-GEAD-000/ and the 
+# download was completed on 2022 Oct 03. The following updated metadata were provided by the GEA maintainers.
 #
 # CIBEX | Title                                                                                              | GEA accession
 # ------|----------------------------------------------------------------------------------------------------|--------------
@@ -19,11 +20,13 @@
 # CBX48 | Genome-Wide Analysis of H3K9 Acetylation in THP-1                                                  | E-GEAD-548  
 # CBX49 | Expression profile (Agilent Human miRNA microarray) of THP-1 with PMA stimulation (10 time-points) | E-GEAD-549  
 #
-# The mapping of probes to genes was provided by Illumina support, downloaded 2023 Oct 03 (not a typo; it was exactly one year later than the date above). 
+# We are currently using only E-GEAD-546 and E-GEAD-547. 
+# 
+# The mapping of probes to genes was provided by Illumina support, downloaded 2023 Oct 03 (not a typo; it was exactly one 
+# year later than the date above). 
 
 import warnings
 warnings.filterwarnings('ignore')
-import gc
 import importlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -54,38 +57,41 @@ humanEpiPath = "../accessory_data/epiList.csv"                               # D
 finalDataFileFolder = "perturbations/fantom4"
 sc.settings.figdir = finalDataFileFolder
 
-# ### Combine into anndata to keep everything together
+# Combine into anndata to keep everything together
 print("Setting up AnnData objects")
-expression_quantified = {}
-try:
-    expression_quantified["train"] = sc.read_h5ad(os.path.join("../not_ready/saunders", "train_working.h5ad"))
-    print("h5ad found")
-except:
-    expression_quantified["train"] = anndata.AnnData(sc.read_mtx("../not_ready/saunders/GSE202639_reference_raw_counts.mtx.gz").T, dtype=np.float32)
-    expression_quantified["train"].var = pd.read_csv("../not_ready/saunders/GSE202639_reference_gene_metadata.csv.gz")
-    expression_quantified["train"].obs = pd.read_csv("../not_ready/saunders/GSE202639_reference_cell_metadata.csv.gz")
-    os.makedirs(finalDataFileFolder, exist_ok = True)
-    expression_quantified["train"].write_h5ad(os.path.join("../not_ready/saunders", "train_working.h5ad"))
+probe_to_gene = pd.read_csv("../not_ready/fantom4/mapping_probes_to_genes/Human_6_V2_11223189_B.csv")
+raw_data_folders = {
+    "test": "E-GEAD-547.raw",
+    "train": "E-GEAD-546.raw",
+}
+sample_list = {
+    k: os.listdir(f"../not_ready/fantom4/fantom4_data/{raw_data_folders[k]}") for k in raw_data_folders.keys()
+}
+expression_quantified = dict()
+for k in sample_list.keys():
+    z = np.zeros((len(sample_list[k]), probe_to_gene.shape[0]))
+    expression_quantified[k] = anndata.AnnData(
+        X = z.copy(), 
+        layers = {"detection":z.copy()},
+        var = probe_to_gene,
+        obs = pd.DataFrame(index = sample_list[k]),
+    )
+    for s in sample_list[k]:
+        x = pd.read_csv(f"../not_ready/fantom4/fantom4_data/{raw_data_folders[k]}/{s}", sep = "\t")
+        x = probe_to_gene.merge(x, left_on = "ProbeId", right_on="ProbeID", how = "left")
+        assert all( x["Target"].values == expression_quantified[k].var["Target"].values )
+        expression_quantified[k][s, ].X = x.iloc[:,2].values
+        expression_quantified[k][s, ].layers["detection"].X = x.iloc[:,3]
 
-try:
-    expression_quantified["test"] = sc.read_h5ad(os.path.join("../not_ready/saunders", "test_working.h5ad"))
-    print("h5ad found")
-except:
-    expression_quantified["test"] = sc.AnnData(sc.read_mtx("../not_ready/saunders/GSE202639_zperturb_full_raw_counts.mtx.gz").T, dtype=np.float32)         
-    expression_quantified["test"].var = pd.read_csv("../not_ready/saunders/GSE202639_zperturb_full_gene_metadata.csv.gz")
-    expression_quantified["test"].obs = pd.read_csv("../not_ready/saunders/GSE202639_zperturb_full_cell_metadata.csv.gz")
-    os.makedirs(finalDataFileFolder, exist_ok = True)
-    expression_quantified["test"].write_h5ad(os.path.join("../not_ready/saunders", "test_working.h5ad"))
-
+        
+# Label with perturbed genes
 expression_quantified["train"].obs["perturbation"] = "control"
 expression_quantified["train"].obs["is_control"] = True
 
-expression_quantified["test"].obs["perturbation"] = expression_quantified["test"].obs["gene_target"].str.replace(
-    "-", ",").str.replace(           # our code expects comma-separated gene lists
-    "ctrl,", "").str.replace(        # convert ctrl,blah to blah
-    "inj", "control").str.replace(   # injection control; this is not a gene name
-    "wnt8", "wnt8a")                 # this gene name has a typo in it. paper says it's wnt8a.
-expression_quantified["test"].obs["is_control"] = [g=="ctrl-inj" for g in expression_quantified["test"].obs["gene_target"]]
+expression_quantified["test"].obs["perturbation"] = [s.split("_")[0].replace(
+    "NC", "control")                 # NC means a negative control: see supp tables 7 and 9 in the FANTOM4 supp info.
+    for s in expression_quantified["test"].obs.index]
+expression_quantified["test"].obs["is_control"] = [g=="control" for g in expression_quantified["test"].obs["perturbation"]]
 
 for t in ("train", "test"):
     expression_quantified[t].obs["is_control_int"] = [float(x) for x in expression_quantified[t].obs["is_control"]]
