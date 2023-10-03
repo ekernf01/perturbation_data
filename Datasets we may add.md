@@ -1,0 +1,13 @@
+
+- timeseries:
+    - FANTOM4 data THP1 data, "The transcriptional network that controls growth arrest and differentiation in a human myeloid leukemia cell line", https://fantom.gsc.riken.jp/4/publications/, plus the [CarPOOL-seq THP1 data](https://www.nature.com/articles/s41592-022-01705-x)
+    - ENCODE perturbation data used by [SCENIC+ paper](https://www.nature.com/articles/s41592-023-01938-4) 
+    - [KnockTF data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6943067/) as used by [Dictys](https://www.biorxiv.org/content/10.1101/2022.09.14.508036v1.full.pdf)
+    - Treutlein group brain organoids [here](https://www.nature.com/articles/s41586-022-05279-8) and [here](https://www.nature.com/articles/s41586-023-06473-y)
+- other:
+    - Pluripotency screen https://www.biorxiv.org/content/10.1101/2023.08.23.554254v1
+    - CD8 T and neural progenitors https://www.nature.com/articles/s41592-023-02017-4
+    - in vivo perturb-seq https://www.biorxiv.org/content/10.1101/2023.09.18.558077v1
+    - Joung atlas https://www.sciencedirect.com/science/article/pii/S0092867422014702
+    - scperturb datasets? https://www.biorxiv.org/content/10.1101/2022.08.20.504663v2.full.pdf
+    - 2016 K562 perturb-seq data: is it consistent with big modern K562 perturb-seq?
