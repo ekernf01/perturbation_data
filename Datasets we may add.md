@@ -1,5 +1,6 @@
 
 - timeseries:
+    - Is there any genetic perturbation data in the same type of cells as this nice time-course? https://pubmed.ncbi.nlm.nih.gov/17913878/ Maybe this study?  https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9900787/
     - FANTOM4 data THP1 data, "The transcriptional network that controls growth arrest and differentiation in a human myeloid leukemia cell line", https://fantom.gsc.riken.jp/4/publications/, plus the [CarPOOL-seq THP1 data](https://www.nature.com/articles/s41592-022-01705-x)
     - ENCODE perturbation data used by [SCENIC+ paper](https://www.nature.com/articles/s41592-023-01938-4) 
     - [KnockTF data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6943067/) as used by [Dictys](https://www.biorxiv.org/content/10.1101/2022.09.14.508036v1.full.pdf)
