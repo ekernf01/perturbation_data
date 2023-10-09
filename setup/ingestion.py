@@ -1,15 +1,13 @@
-from typing import Iterable
 import numpy as np 
 import pandas as pd 
 import h5py
 import scanpy as sc
 import anndata
-import typing 
 import gc
 from joblib import Parallel, delayed, cpu_count, dump
 
 # For QC
-import os, sys
+import os
 import itertools as it
 import scipy
 from scipy.stats import spearmanr, pearsonr, rankdata, f_oneway, ttest_ind
@@ -17,7 +15,6 @@ from statsmodels.stats.multitest import multipletests
 from sklearn.metrics import mutual_info_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-import warnings
 
 def try_toarray(x):
     try:
@@ -177,6 +174,29 @@ def deseq2Normalization(counts_df):
 
 
 
+def visualizeLogFC(fc, pval = None, show_plots = False):
+    validLogFC = fc[fc != -999]
+    rangeMin = np.floor(np.min(validLogFC))
+    rangeMax = np.ceil (np.max(validLogFC))
+    plt.figure(figsize=(4,2.5))
+    if pval is not None:
+        pval = pval[pval != -999]
+        plt.scatter(validLogFC, -np.log10(pval))
+        plt.ylabel("-Log10 p-value")
+    else:
+        plt.hist(validLogFC, 
+                bins=np.linspace(rangeMin, 
+                                rangeMax, 
+                                int((rangeMax-rangeMin)*3+1)), 
+                label="Per Trial")
+        plt.ylabel("Count")
+
+    plt.axvline(0, 0, 1, color='red', label="No Change")
+    plt.xlabel("Log2 Fold Change (perturbed/control)")
+    plt.legend()
+    if show_plots:
+        plt.show()
+
 def checkConsistency(adata: anndata.AnnData, 
                      perturbationType: str="overexpression", 
                      group: str=None,
@@ -200,28 +220,6 @@ def checkConsistency(adata: anndata.AnnData,
                         and the treatment, if the perturbation direction and expression
                         level are disconcordant.
     """
-    def visualizeLogFC(fc, pval = None):
-        validLogFC = fc[fc != -999]
-        rangeMin = np.floor(np.min(validLogFC))
-        rangeMax = np.ceil (np.max(validLogFC))
-        plt.figure(figsize=(4,2.5))
-        if pval is not None:
-            pval = pval[pval != -999]
-            plt.scatter(validLogFC, -np.log10(pval))
-            plt.ylabel("-Log10 p-value")
-        else:
-            plt.hist(validLogFC, 
-                    bins=np.linspace(rangeMin, 
-                                    rangeMax, 
-                                    int((rangeMax-rangeMin)*3+1)), 
-                    label="Per Trial")
-            plt.ylabel("Count")
-
-        plt.axvline(0, 0, 1, color='red', label="No Change")
-        plt.xlabel("Log2 Fold Change (perturbed/control)")
-        plt.legend()
-        if show_plots:
-            plt.show()
         
     
     assert perturbationType in ["overexpression", "knockout", "knockdown"]
@@ -238,30 +236,30 @@ def checkConsistency(adata: anndata.AnnData,
             consistencyStatus[row] = "NA"
             continue
         loc = np.where(adata.var.index == perturbagen)[0]
-        assert loc.shape[0] == 1
+        # assert loc.shape[0] == 1 # This gene is only measured by one feature.
         
-        if group:        # Only compare treatment to within-group controls (to limit variability)
+        if group is not None:        # Only compare treatment to within-group controls (to limit variability)
             assert group in adata.obs.columns
             control = normX[adata.obs.is_control & (adata.obs[group] == adata.obs[group][row]), :]
-        logFC[row] = np.log2(try_toarray(normX[row, loc[0]]) / np.median(try_toarray(control[:, loc])))   
+        logFC[row] = np.log2(try_toarray(np.median(normX[row, loc])) / np.median(try_toarray(control[:, loc])))   
         has_same_perturbation = perturbagen == adata.obs["perturbation"]
         pval[row] = ttest_ind(
-            np.log2(try_toarray(normX[has_same_perturbation, loc[0]])), 
-            np.log2(try_toarray(control[:, loc[0]])), 
+            np.log2(try_toarray(normX[has_same_perturbation, :][:, loc])).flatten(), 
+            np.log2(try_toarray(control[:, loc])).flatten(), 
             equal_var=True,
         ).pvalue
-        if perturbationType == "overexpression" and normX[row, loc] > np.median(control[:, loc]):
+        if perturbationType == "overexpression" and np.median(normX[row, loc]) > np.median(control[:, loc]):
             continue
-        if perturbationType == "knockdown"      and normX[row, loc] < np.median(control[:, loc]):
+        if perturbationType == "knockdown"      and np.median(normX[row, loc]) < np.median(control[:, loc]):
             continue
-        if perturbationType == "knockout"       and abs(normX[row, loc]) < 1e-3:
+        if perturbationType == "knockout"       and abs(np.median(normX[row, loc])) < 1e-3:
             continue
         consistencyStatus[row] = "No"  
         
         if verbose:
             plt.figure(figsize=(4,1))
             g = sns.swarmplot(control[:, loc].flatten(), orient='h', label="control")
-            g.axvline(normX[row, loc], 0, 1, color='red', label="treatment", lw=1)
+            g.axvline(np.median(normX[row, loc]), 0, 1, color='red', label="treatment", lw=1)
             g.legend(loc='lower right', bbox_to_anchor=(1.45, 0), ncol=1)
             plt.title(f"{perturbagen} {perturbationType}")
             plt.show()
@@ -276,10 +274,10 @@ def checkConsistency(adata: anndata.AnnData,
     logFC[np.isneginf(logFC)] = np.nanmedian(logFC[(logFC < 0) & (logFC != -999) & np.isfinite(logFC)])
     
     if do_return_pval:
-        visualizeLogFC(logFC, pval)
+        visualizeLogFC(logFC, pval, show_plots = show_plots)
         return consistencyStatus, logFC, pval
     else:
-        visualizeLogFC(logFC)
+        visualizeLogFC(logFC, show_plots = show_plots)
         return consistencyStatus, logFC
 
 
