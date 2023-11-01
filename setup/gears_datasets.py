@@ -34,7 +34,7 @@ pert_types = {
     "adamson": "knockdown",
     "norman": "overexpression",
 }
-for dataset in ("norman", "dixit", "adamson"):
+for dataset in ("dixit", "adamson", "norman"):
     finalDataFileFolder = f"../perturbations/{dataset}"
     os.makedirs(finalDataFileFolder, exist_ok = True)
     try:
@@ -56,7 +56,12 @@ for dataset in ("norman", "dixit", "adamson"):
         multiple_genes_hit=True if dataset=="norman" else False,
     )
     sc.pp.highly_variable_genes(expression_quantified, flavor="seurat_v3", n_top_genes=expression_quantified.var.shape[0])
-    breakpoint()
+    sc.tl.pca(expression_quantified, n_comps=100)
+    sc.pp.neighbors(expression_quantified)
+    sc.tl.umap(expression_quantified)
+    sc.tl.louvain(expression_quantified)
+    print(expression_quantified.obs.columns)
+    sc.pl.umap(expression_quantified, color = ["is_control_int", "louvain"], save = dataset)
     perts = set().union(*[set(p.split(",")) for p in expression_quantified.obs['perturbation'].unique()])
     perturbed_genes = perts.difference({"ctrl"})
     perturbed_and_measured_genes = perturbed_genes.intersection(expression_quantified.var.index)
