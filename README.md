@@ -27,15 +27,16 @@ Every AnnData object in the collection conforms to certain expectations. To add 
 - save an AnnData object in `perturbation_data/perturbations/<dataset_name>/test.h5ad`.
 - ensure that the result passes the assertions done by `load_perturbations.check_perturbation_dataset()`.
 
-You can look at the notebooks in `setup` for examples. This README may be out of date, but here are some key requirements.
+This README may be out of date (the checker function is authoritative), but here are some key requirements as of 2023 Nov 02.
 
-- A file `test.h5ad` containing perturbation transcriptomics data, and optionally a file `train.h5ad` containing time-series data from the same system
+- There must be a file `test.h5ad` containing perturbation transcriptomics data, and optionally a file `train.h5ad` containing time-series data from the same system.
 - Each h5ad must have a column `"perturbation"` in `.obs` with dtype `str`, indicating what gene or genes are perturbed (e.g. `"FOXN1"` or `"FOXN1,PAX9"`).
-- Each must have a boolean column in `.obs` called `"is_control"`, with the obvious meaning
-- Each must have a column `gene_rank` in `.var` containing a positive integer rank for each gene (lower values are more interesting). 
+- Each must have a boolean column in `.obs` called `"is_control"`, with the obvious meaning.
+- Each must have a column `gene_rank` in `.var` containing a positive integer rank for each gene (lower values are more interesting; we might select e.g. the bottom 1,000 genes). 
 - Each must have an iterable `"perturbed_but_not_measured_genes"` in `uns`, containing names of all genes that are perturbed but not measured.
 - Each must have an iterable `"perturbed_and_measured_genes"` in `uns`, containing all genes that are perturbed and also measured.
 - Expression in `.X` should be normalized and log-transformed. 
 - Raw data should be present in `raw`. This is currently only needed for GeneFormer.
-- `train` and `test` must have the same genes and the same ranking.
+- `train` and `test` must have the same genes and the same `gene_rank`.
  
+Aside from these format requirements, we also analyze perturbation effectiveness, correlation across replicates, normalization, typical scRNA QC (e.g. empty droplets), and possible confounders (donor, batch, cell cycle, treatment) with a special focus on heterogeneity among control samples. We sometimes regress out some variation or remove some samples/cells. You can look at the notebooks or scripts in `setup` for examples. 
