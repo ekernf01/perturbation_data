@@ -5,6 +5,10 @@
     - ENCODE perturbation data used by [SCENIC+ paper](https://www.nature.com/articles/s41592-023-01938-4) 
     - [KnockTF data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6943067/) as used by [Dictys](https://www.biorxiv.org/content/10.1101/2022.09.14.508036v1.full.pdf)
     - Treutlein group brain organoids [here](https://www.nature.com/articles/s41586-022-05279-8) and [here](https://www.nature.com/articles/s41586-023-06473-y)
+    - A549 glucocorticoid stimulation data used by [BETS](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008223#sec010)
+        - dexamethasone data available from GSE91305, GSE91198, GSE91311, GSE91358, GSE91303, GSE91243, GSE91281, GSE91229, GSE91255, GSE91284, GSE91222, and GSE91212;  
+        - post-dexamethasone-removal data sets available at GEO accession GSE144662
+        - overexpression data sets available at GEO accession GSE144660.
 - other:
     - Pluripotency screen https://www.biorxiv.org/content/10.1101/2023.08.23.554254v1
     - CD8 T and neural progenitors https://www.nature.com/articles/s41592-023-02017-4
