@@ -1,29 +1,27 @@
 
-This is a collection of uniformly formatted perturbation datasets, accompanied by the code used to acquire and clean the data. This part of our [benchmarking project](https://github.com/ekernf01/perturbation_benchmarking).
+This is a collection of uniformly formatted perturbation datasets, accompanied by the code used to acquire and clean the data. This part of our [benchmarking project](https://github.com/ekernf01/perturbation_benchmarking). These data all measure the transcriptome, and every test dataset includes measurements after a genetic knockout or knockdown or overexpression experiment. These datasets are all from human cells. The main differences among these datasets are the cell type, data type (e.g. microarray vs scRNA-seq), and scale (dozens to thousands of perturbations). 
 
 ### Installation and usage
 
-The expression data themselves are too big to put on GitHub, but they are on Zenodo (DOI: 10.5281/zenodo.8071809). Simply download them to any permanent location and point our [data loader package](https://github.com/ekernf01/load_perturbations) to the "perturbations" subfolder using `load_perturbations.set_data_path("path/to/perturbation_data/perturbations")`. There is no R API but you could probably use this collection from R without too much hassle; see format details below.
+If you are seeing this on Github: the expression data are too big to put on GitHub, but they are on Zenodo (DOI: 10.5281/zenodo.8071809). 
 
-### About the datasets 
-
-The two main commonalities among these data: they all measure the transcriptome, and every test dataset includes measurements after a genetic knockout or an overexpression experiment. The main differences among these datasets are:
-
-- What lab or project did they come from?
-- What organism and cell type are they in?
-- How many perturbations are covered?
-
-Metadata answering those questions are stored in `perturbations/perturbations.csv`. 
+If you are seeing this on Zenodo, you can download the data to any permanent location and access it via our [data loader package](https://github.com/ekernf01/load_perturbations). 
 
 ### Format details 
 
-Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/latest/index.html) objects in `train.h5ad` and `test.h5ad`. Some may lack separate training data, having only `test.h5ad`. When there is a separate training dataset, it will usually come from the same biological system or set of cell types as the test data, but it will lack perturbations and it may have more interesting temporal structure than the test data. 
+Metadata listing data sources, number of perturbations, and other summaries are stored in `perturbations/perturbations.csv`. 
 
-### Adding new datasets and setting clear expectations
+Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/latest/index.html) objects in `train.h5ad` and `test.h5ad`. Some may lack separate training data, having only `test.h5ad`. When there is a separate training dataset, it will usually come from the same biological system or set of cell types as the test data, but it will lack perturbations and it will have time-series measurements. 
+
+### Preprocessing
+
+The code we used to preprocess the data is in a subfolder `setup`. It is missing from our initial Zenodo upload, but it is available on Github and we intend to include it in future Zenodo data releases. It relies on data in a subfolder `not_ready`, which we have omitted from Zenodo in order to reduce the download size. If you want to repeat or alter preprocessing of a dataset, all data sources are listed in `perturbations/perturbations.csv`. 
+
+### Adding new datasets
 
 Every AnnData object in the collection conforms to certain expectations. To add new datasets or alter ingestion of a current dataset, you must:
 
-- add a row starting with your dataset's name in `perturbations.csv`.
+- add and fill a row starting with your dataset's name in `perturbations.csv`.
 - save an AnnData object in `perturbation_data/perturbations/<dataset_name>/test.h5ad`.
 - ensure that the result passes the assertions done by `load_perturbations.check_perturbation_dataset()`.
 
