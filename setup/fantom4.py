@@ -57,8 +57,10 @@ geneAnnotationPath = "../accessory_data/gencode.v35.annotation.gtf.gz"       # D
 humanTFPath = "../accessory_data/humanTFs.csv"                               # Downloaded from http://humantfs.ccbr.utoronto.ca/download.php
 humanEpiPath = "../accessory_data/epiList.csv"                               # Downloaded from https://epifactors.autosome.org/description 
 
-finalDataFileFolder = "perturbations/fantom4"
+finalDataFileFolder = "../perturbations/fantom4"
 sc.settings.figdir = finalDataFileFolder
+os.makedirs(os.path.join(finalDataFileFolder, "test"),  exist_ok=True)
+os.makedirs(os.path.join(finalDataFileFolder, "train"), exist_ok=True)
 
 # Combine into anndata to keep everything together
 print("Setting up AnnData objects")
