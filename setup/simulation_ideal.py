@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import os
 import ingestion
+import matplotlib.pyplot as plt
 
 # Access our code
 import load_perturbations
@@ -38,9 +39,9 @@ DEFAULT_HUMAN_TFs = DEFAULT_HUMAN_TFs.loc[DEFAULT_HUMAN_TFs["Is TF?"]=="Yes", "H
 # - all factors perturbed in either train or test data
 
 for true_network in [
-        "celloracle_human"      ,
         "MARA_FANTOM4"          ,
         "gtex_rna"              ,
+        "celloracle_human"      ,
         "cellnet_human_Hg1332"  ,
         "cellnet_human_Hugene"  ,
     ]:
@@ -49,14 +50,20 @@ for true_network in [
     network_edges = load_networks.pivotNetworkLongToWide(network_edges)
     network_edges.index = network_edges["gene_short_name"]
 
-    # Make it square and TFs-only (much faster; code scales poorly with dimension because we perturb all genes)
+    # Make it square, symmetric, and TFs-only (much faster; code scales poorly with dimension because we perturb all genes)
     network_edges = network_edges[network_edges["gene_short_name"].isin(DEFAULT_HUMAN_TFs)]
     network_edges = network_edges.loc[network_edges.index.isin(network_edges.columns), :]
     network_edges = network_edges.loc[:, network_edges.columns.isin(network_edges.index)]
     network_edges = network_edges.loc[network_edges.index, network_edges.index]
+    gene_names = network_edges.index
+    network_edges = np.array(network_edges)>0
+    # plt.imshow(network_edges)
+    # plt.title(true_network)
+    # plt.show()
+
     # To make the steady-state exist under all perts, set the max eigenvalue plus effect size to <<1.
     effect_size = 0.1
-    F = np.array(network_edges)*effect_size
+    F = network_edges*effect_size
     eigenstuff = np.linalg.eig(F)
     max_index = np.argmax(np.abs(eigenstuff[0]))
     max_eigenvalue = np.abs(eigenstuff[0][2]) 
@@ -84,10 +91,10 @@ for true_network in [
 
             # Fix metadata
             expression_quantified.obs.loc[expression_quantified.obs["perturbation"]=="control",  "is_control"] = True
-            expression_quantified.var.index = expression_quantified.var["gene_name"] = network_edges.index
+            expression_quantified.var.index = expression_quantified.var["gene_name"] = gene_names
             not_control = ~expression_quantified.obs["is_control"]
             expression_quantified.obs.loc[not_control, "perturbation"] = [
-                network_edges.index[int(g)] 
+                gene_names[int(g)] 
                 for g in expression_quantified.obs.loc[not_control, "perturbation"]
             ]
 
