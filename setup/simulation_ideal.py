@@ -12,8 +12,6 @@ import scanpy as sc
 import pandas as pd
 import numpy as np
 import os
-import altair as alt
-import shutil 
 import ingestion
 
 # Access our code
@@ -31,9 +29,9 @@ load_perturbations.set_data_path(
 DEFAULT_HUMAN_TFs = pd.read_csv("../../accessory_data/humanTFs.csv")
 DEFAULT_HUMAN_TFs = DEFAULT_HUMAN_TFs.loc[DEFAULT_HUMAN_TFs["Is TF?"]=="Yes", "HGNC symbol"]
 
-# Would this work if we had everything right?
+# Would our benchmarks work if we had everything right?
 #
-# - steady state assumption is right
+# - steady state assumption is right, or matched controls are available
 # - no noise
 # - large effects
 # - correct network structure 
@@ -42,7 +40,7 @@ DEFAULT_HUMAN_TFs = DEFAULT_HUMAN_TFs.loc[DEFAULT_HUMAN_TFs["Is TF?"]=="Yes", "H
 for true_network in [
         "celloracle_human"      ,
         "MARA_FANTOM4"          ,
-        "gtex_rna"            ,
+        "gtex_rna"              ,
         "cellnet_human_Hg1332"  ,
         "cellnet_human_Hugene"  ,
     ]:
@@ -63,8 +61,9 @@ for true_network in [
     max_index = np.argmax(np.abs(eigenstuff[0]))
     max_eigenvalue = np.abs(eigenstuff[0][2]) 
     F = 0.01*F / np.max([1, max_eigenvalue])
-    X0 = 0*eigenstuff[1][:, 2] # Initialize to 0 or leading eigenvector
-    X0 = np.array([X0,X0])
+
+    # X0 = 0*eigenstuff[1][:, 2] # Initialize to 0 or leading eigenvector
+    # X0 = np.array([X0,X0])
 
     # Create both steady-state and single-step data
     for noise_sd in [0, 0.001]:
@@ -74,14 +73,13 @@ for true_network in [
             expression_quantified, R,G,Q,F, latent_dimension = ggrn_autoregressive.simulate_autoregressive(
                 F = F, 
                 num_steps = num_steps, 
-                initial_state=X0, 
-                expression_level_after_perturbation = 1
+                expression_level_after_perturbation = 1, 
+                initial_state = "random",
+                matched_control_is_integer = False,
             )
-            # Censor initial state: we only see the final takedown
-            expression_quantified = expression_quantified[expression_quantified.obs["time"]>0,:] 
             expression_quantified.X = expression_quantified.X + noise_sd*np.random.standard_normal(expression_quantified.X.shape)
             # When checking these data, the benchmarking and ggrn framework will typically assume it's on 
-            # the scale of logged gene expression data, so certainly no values above 15. We need to skip this check.
+            # the scale of logged counts per million gene expression data, so certainly no values above 15. We need to skip this check.
             expression_quantified.uns["skip_log_check"] = True
 
             # Fix metadata
