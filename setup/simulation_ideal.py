@@ -62,13 +62,12 @@ for true_network in [
     # plt.show()
 
     # To make the steady-state exist under all perts, set the max eigenvalue plus effect size to <<1.
-    effect_size = 0.1
+    effect_size = 1.0
     F = network_edges*effect_size
     eigenstuff = np.linalg.eig(F)
     max_index = np.argmax(np.abs(eigenstuff[0]))
     max_eigenvalue = np.abs(eigenstuff[0][2]) 
-    F = 0.01*F / np.max([1, max_eigenvalue])
-
+    # F = 0.01*F / np.max([1, max_eigenvalue])
     # X0 = 0*eigenstuff[1][:, 2] # Initialize to 0 or leading eigenvector
     # X0 = np.array([X0,X0])
 
