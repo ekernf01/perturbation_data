@@ -1,0 +1,20 @@
+Count data from Nakatake et al. 2020.
+
+> Nakatake, Y., Ko, S. B., Sharov, A. A., Wakabayashi, S., Murakami, M., Sakota, M., ... & Ko, M. S. (2020). Generation and profiling of 2,135 human ESC lines for the systematic analyses of cell states perturbed by inducing single transcription factors. Cell Reports, 31(7), 107655.
+
+Downloaded from a link provided by the authors on 2022 Feb 11. 
+http://alexei.nfshost.com/personal/CREST_06162021.txt.gz
+
+Note: the file originally ended in `.gz`, but was plain text, not gzipped. For septin genes, MARC (mitochondrial amidoxime reducing component) genes, MARCH (membrane associated ring-CH-type finger) genes, and DEC1 (Deleted In Esophageal Cancer 1), apparent [Excel-type](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008984) [errors](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-1044-7) were manually fixed.
+
+Notes from the authors on format, received by email:
+
+> In this table there are 25090 rows (measured genes) and 1012 columns - samples of ES cells with induced transcription factors (TFs) after 48 h of induction.
+> Columns with identical headers are independent clones of the same TF. Most clones are represented by 2 replications, which are already combined. Thus, the numbers are geometric means of 2 replications in FPKM units.
+> Each replication is represented by 2 samples: DOX+ and DOX- (=control). All replications are already normalazed on their own controls (DOX-), and all controls are combined together.
+> First 859 columns are RNA-seq data ending by a "Control" column; other 153 columns are microarray data which are converted to FPKM units by equalizing microarray-controls with RNA-seq-controls. Value "-9999" stands for missing data; most of them are in the microarray section where a specific gene was not present in the microarray.
+> For statistical analysis of these data we considered each clone as a replication, and the whole set was processed with ANOVA as described in the paper and in the help fie for ExAtlas web software. Results of ANOVA can be downloaded from ExAtlas page. 
+
+Quantification methods from the paper:
+
+> Sequence reads were mapped to the human genome hg19 by BOWTIE2/SAMtools (Langmead and Salzberg, 2012) and then processed by Cufflinks (Trapnell et al., 2010) to estimate gene expression levels as FPKM. To capture the expression of additional genes (e.g., non-coding, not annotated, and repetitive genes) we used in-house program that counted weighted scores of reads matching to each transcript with maximum 2 mismatches. Weights were set inverse to the number of matched genome locations. Sum of read weights were then converted to FPM and FPKM values. Because we were interested in the changes of gene expression between the Dox+ and Dox- culture conditions, we estimated logratio: LRij = log10(xij / yij), where xij and yij are expression values of gene i in cells of clone j cultured in the Dox+ and Dox- conditions, respectively. We assumed that most genes do not respond to the induction of the transgenes, and thus, the median logratio was expected to be close to zero. However, due to unknown factors (e.g., effect of Dox or cell handling), the median logratio was deviating from zero for many clones, and in some clones, the deviation was different for low-expressed and high-expressed genes. To reduce the effects of these factors, we first estimated the median logratio in the subsets of high-expressed genes (with FPM from 100 to 1000 in Dox-) and low-expressed genes (FPM from 31.6 to 100 in Dox-) for each clone. Then, the logratio of each gene was adjusted by subtracting a correction value that depended linearly from the log-transformed median expression in Dox- conditions. The slope and intercept of the linear function were estimated from 2 points with coordinates equal to log-transformed median expression (x) and median logratio (y) before adjustment in two subsets of high-expressed and low-expressed genes. Finally, normalized gene expression in Dox+ was estimated as the median expression in Dox- conditions multiplied by the fold change estimated from the adjusted logratio.
