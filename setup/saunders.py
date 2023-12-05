@@ -84,6 +84,8 @@ expression_quantified["test"].obs["is_control"] = [g=="ctrl-inj" for g in expres
 for t in ("train", "test"):
     expression_quantified[t].obs["is_control_int"] = [float(x) for x in expression_quantified[t].obs["is_control"]]
     expression_quantified[t].obs_names = [str(s) for s in expression_quantified[t].obs_names] 
+    expression_quantified[t].var_names = [str(g) for g in expression_quantified[t].var_names]
+    expression_quantified[t].var_names_make_unique()
 
 # ### Remove low-quality cells and low-expressed genes
 # 
@@ -141,6 +143,8 @@ expression_quantified["test"].uns["perturbed_and_measured_genes"]     = list(per
 expression_quantified["test"].uns["perturbed_but_not_measured_genes"] = list(perturbed_but_not_measured_genes)
 expression_quantified["test"].uns["perturbations_overlap"] = True
 expression_quantified["test"] = ingestion.describe_perturbation_effect(expression_quantified["test"], "knockout", multiple_genes_hit = True)
+expression_quantified["train"].obs["expression_level_after_perturbation"] = np.nan # This will be ignored anyway
+expression_quantified["train"].obs["perturbation_type"] = np.nan # This will be ignored anyway
 status, logFC = ingestion.checkConsistency(expression_quantified["test"], 
                                            perturbationType="knockout", 
                                            group="embryo",
@@ -157,16 +161,16 @@ print("Data exploration")
 for t in ("train", "test"):
     print(f"Exploring {t}")
     # Fix up a few key metadata fields
-    # sc.pp.calculate_qc_metrics(expression_quantified[t], inplace=True)
+    sc.pp.calculate_qc_metrics(expression_quantified[t], inplace=True)
     expression_quantified[t].obs["timepoint"] = expression_quantified[t].obs["timepoint"].astype("str").astype(float)
     expression_quantified[t].obs["cell_type"] = expression_quantified[t].obs["cell_type_broad"]
     expression_quantified[t].obs["cell_count"] = expression_quantified[t].obs["count"]
-    # sc.pp.log1p(expression_quantified[t])
-    # sc.pp.highly_variable_genes(expression_quantified[t], flavor = "seurat_v3", n_top_genes=expression_quantified[t].shape[1])
-    # with warnings.catch_warnings():
-    #     sc.tl.pca(expression_quantified[t], n_comps=100)
-    # sc.pp.neighbors(expression_quantified[t])
-    # sc.tl.umap(expression_quantified[t])
+    sc.pp.log1p(expression_quantified[t])
+    sc.pp.highly_variable_genes(expression_quantified[t], flavor = "seurat_v3", n_top_genes=expression_quantified[t].shape[1])
+    with warnings.catch_warnings():
+        sc.tl.pca(expression_quantified[t], n_comps=100)
+    sc.pp.neighbors(expression_quantified[t])
+    sc.tl.umap(expression_quantified[t])
     expression_quantified[t].write_h5ad(os.path.join("../perturbations/saunders", f"{t}.h5ad"))
 
 expression_quantified = dict()
