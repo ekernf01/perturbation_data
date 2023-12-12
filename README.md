@@ -3,7 +3,7 @@ This is a collection of uniformly formatted perturbation datasets, accompanied b
 
 ### Installation and usage
 
-If you are seeing this on Github: the expression data are too big to put on GitHub, but they are on Zenodo (DOI: 10.5281/zenodo.8071809). 
+If you are seeing this on Github: the expression data are too big to put on GitHub, but they are on Zenodo (DOI: 10.5281/zenodo.10363068). 
 
 If you are seeing this on Zenodo, you can download the data to any permanent location and access it via our [data loader package](https://github.com/ekernf01/load_perturbations). 
 
