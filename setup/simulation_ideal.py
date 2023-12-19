@@ -50,38 +50,35 @@ for true_network in [
     network_edges = load_networks.pivotNetworkLongToWide(network_edges)
     network_edges.index = network_edges["gene_short_name"]
 
-    # Make it square, symmetric, and TFs-only (much faster; code scales poorly with dimension because we perturb all genes)
+    # Make it square, symmetric, and TFs-only.
+    # # TFs-only is much faster; the code scales poorly with dimension because we perturb all genes.
     network_edges = network_edges[network_edges["gene_short_name"].isin(DEFAULT_HUMAN_TFs)]
     network_edges = network_edges.loc[network_edges.index.isin(network_edges.columns), :]
     network_edges = network_edges.loc[:, network_edges.columns.isin(network_edges.index)]
     network_edges = network_edges.loc[network_edges.index, network_edges.index]
     gene_names = network_edges.index
     network_edges = np.array(network_edges)>0
-    # plt.imshow(network_edges)
-    # plt.title(true_network)
-    # plt.show()
+    effect_sizes = 1.0 
+    F = network_edges*effect_sizes
 
     # To make the steady-state exist under all perts, set the max eigenvalue plus effect size to <<1.
-    effect_size = 1.0
-    F = network_edges*effect_size
     eigenstuff = np.linalg.eig(F)
     max_index = np.argmax(np.abs(eigenstuff[0]))
     max_eigenvalue = np.abs(eigenstuff[0][2]) 
-    # F = 0.01*F / np.max([1, max_eigenvalue])
-    # X0 = 0*eigenstuff[1][:, 2] # Initialize to 0 or leading eigenvector
-    # X0 = np.array([X0,X0])
+    F = 0.5*F / np.max([1, max_eigenvalue])
 
     # Create both steady-state and single-step data
     for noise_sd in [0, 0.001]:
-        for num_steps in [1, 10]:
+        for num_steps in [1, 10, 50, 100]:
             finalDataFileFolder = f"../perturbations/simulation_TrueNetwork={true_network}_S={num_steps}_NoiseSD={noise_sd}"
             print(finalDataFileFolder)
             expression_quantified, R,G,Q,F, latent_dimension = ggrn_autoregressive.simulate_autoregressive(
                 F = F, 
                 num_steps = num_steps, 
                 expression_level_after_perturbation = 1, 
-                initial_state = "random",
-                matched_control_is_integer = False,
+                initial_state = np.random.random(F.shape),
+                matched_control_is_integer = False, 
+                residual_connections= False,
             )
             expression_quantified.X = expression_quantified.X + noise_sd*np.random.standard_normal(expression_quantified.X.shape)
             # When checking these data, the benchmarking and ggrn framework will typically assume it's on 
@@ -111,6 +108,8 @@ for true_network in [
                 perturbation_type="overexpression", 
                 multiple_genes_hit=False,
             )
+            print(f"max expression: {expression_quantified.X.max()}")
+            print(f"mean expression: {expression_quantified.X.mean()}")
             # Save results
             os.makedirs(finalDataFileFolder, exist_ok = True)
             expression_quantified.write_h5ad(os.path.join(finalDataFileFolder, "test.h5ad"))
