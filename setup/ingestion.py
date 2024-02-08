@@ -21,7 +21,6 @@ def try_toarray(x):
         pass
     return x
 
-
 def simplify_categorical(x:pd.DataFrame, column: str, max_categories: int = 20, filler: str = "other", new_column: str = None):
     """Mark less frequent categories as other. Accepts and returns a dataframe."""
     assert type(x) is pd.DataFrame
@@ -222,7 +221,7 @@ def checkConsistency(adata: anndata.AnnData,
     
     assert perturbationType in ["overexpression", "knockout", "knockdown"]
     
-    normX        = adata.X.copy()
+    normX        = try_toarray(adata.X.copy())
     controlIndex = np.where(adata.obs.is_control)[0]
     control      = normX[controlIndex, :]
     logFC        = np.full((adata.n_obs), -999.0)
@@ -239,7 +238,7 @@ def checkConsistency(adata: anndata.AnnData,
         if group is not None:        # Only compare treatment to within-group controls (to limit variability)
             assert group in adata.obs.columns
             control = normX[adata.obs.is_control & (adata.obs[group] == adata.obs[group][row]), :]
-        logFC[row] = np.log2(try_toarray(np.median(normX[row, loc])) / np.median(try_toarray(control[:, loc])))   
+        logFC[row] = np.log2(np.median(try_toarray(normX[row, loc])) / np.median(try_toarray(control[:, loc])))   
         has_same_perturbation = perturbagen == adata.obs["perturbation"]
         pval[row] = ttest_ind(
             np.log2(try_toarray(normX[has_same_perturbation, :][:, loc])).flatten(), 
@@ -257,7 +256,7 @@ def checkConsistency(adata: anndata.AnnData,
         if verbose:
             plt.figure(figsize=(4,1))
             g = sns.swarmplot(control[:, loc].flatten(), orient='h', label="control")
-            g.axvline(np.median(normX[row, loc]), 0, 1, color='red', label="treatment", lw=1)
+            g.axvline(np.median(try_toarray(normX[row, loc])), 0, 1, color='red', label="treatment", lw=1)
             g.legend(loc='lower right', bbox_to_anchor=(1.45, 0), ncol=1)
             plt.title(f"{perturbagen} {perturbationType}")
             plt.show()

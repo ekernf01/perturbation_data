@@ -9,6 +9,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
+def try_toarray(x):
+    try:
+        x = x.toarray()
+    except Exception:
+        pass
+    return x
+
 def thresholdByFoldChange(treatment: np.ndarray, control: np.ndarray):
     """ Compute the log fold change between the treatment group and
     the control group. If all log(FC) are positive and the smallest
@@ -50,7 +57,7 @@ def thresholdByFDR(treatment: np.ndarray, control: np.ndarray, verbose: bool=Fal
     pAdjusted = multipletests(pVals, method='fdr_bh')[1]
     if verbose:
         plt.figure(figsize=(3,3))
-        plt.hist(pVals, bins=np.linspace(-0, 1, 102), alpha=0.5)
+        plt.hist(    pVals, bins=np.linspace(-0, 1, 102), alpha=0.5)
         plt.hist(pAdjusted, bins=np.linspace(-0, 1, 102), alpha=0.5)
         plt.show()
     return pAdjusted < 0.05
@@ -103,7 +110,7 @@ def readFile(perturbs: list[str], variables: list, names: str, filename: str):
 
 def saveToFile(variables: list, names: str, filename: str):
     """ Save current progress to disk periodically """
-    arr = np.hstack([v[:, np.newaxis] for v in variables])
+    arr = np.hstack([np.array(v)[:, np.newaxis] for v in variables])
     df  = pd.DataFrame(arr, columns=names)
     df.to_csv(filename, index=False)    
     
@@ -135,7 +142,7 @@ def quantifyEffect(
         print(f"The specified column {group} does not exist in adata.obs")
 
     perturbs = sorted(set(adata[~adata.obs.is_control].obs.perturbation))
-    normX    = adata.X.copy()
+    normX    = try_toarray(adata.X.copy())
     
     columnToKeep = list(set(range(normX.shape[1])) - 
                         set(np.where(normX == 0)[1]))
@@ -157,7 +164,7 @@ def quantifyEffect(
         
         # If missing values, re-compute
         if -1 not in [deg[idx], mean[idx], norm2[idx], median[idx], mi[idx]]:
-            print(idx, p, deg[idx], mean[idx], median[idx], norm2[idx], mi[idx])
+            # print(idx, p, deg[idx], mean[idx], median[idx], norm2[idx], mi[idx])
             continue
         
         # If stratify by group, record each group and take the median across groups.
@@ -209,7 +216,7 @@ def quantifyEffect(
         mean  [idx] = np.median([o[0] for o in outStat])
         median[idx] = np.median([o[1] for o in outStat])
         norm2 [idx] = np.median([o[2] for o in outStat])
-        print(idx, p, deg[idx], mean[idx], median[idx], norm2[idx], mi[idx])
+        # print(idx, p, deg[idx], mean[idx], median[idx], norm2[idx], mi[idx])
 
         if (idx + 1) % 30 == 0 or idx == len(perturbs) - 1:           
             saveToFile([deg, mi, mean, norm2, median], names, fname)
@@ -220,5 +227,5 @@ def quantifyEffect(
     for mCount in range(5):
         adata.obs[f'{prefix}{names[mCount]}'] = np.full(adata.n_obs, -999, dtype=np.float64)
         for pCount, p in enumerate(perturbs):
-            rows = np.where(adata.obs.perturbation == p)[0]
-            adata.obs[f'{prefix}{names[mCount]}'][rows] = metrics[mCount][pCount]
+            rows = adata.obs.index[adata.obs.perturbation == p]
+            adata.obs.loc[rows, f'{prefix}{names[mCount]}'] = metrics[mCount][pCount]
