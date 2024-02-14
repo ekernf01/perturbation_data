@@ -232,8 +232,12 @@ expression_quantified["test"].obs[ "pearsonCorr"] = correlations[1]
 
 # Some basic exploration of results
 print("Data exploration")
-expression_quantified["both"] = anndata.concat(expression_quantified)
-for t in ("train", "test", "both"):
+expression_quantified["both_uncorrected"] = anndata.concat(expression_quantified)
+expression_quantified["both_uncorrected"].uns["perturbed_and_measured_genes"]      = expression_quantified["test"].uns["perturbed_and_measured_genes"]  
+expression_quantified["both_uncorrected"].uns["perturbed_but_not_measured_genes"]  = expression_quantified["test"].uns["perturbed_but_not_measured_genes"] 
+expression_quantified["both_uncorrected"].uns["perturbations_overlap"]             = expression_quantified["test"].uns["perturbations_overlap"] 
+
+for t in ("train", "test", "both_uncorrected"):
     print(f"Exploring {t}")
     sc.pp.highly_variable_genes(expression_quantified[t], flavor = "seurat_v3", n_top_genes=expression_quantified[t].shape[1])
     with warnings.catch_warnings():
@@ -253,17 +257,22 @@ sc.pp.regress_out(expression_quantified["test"], "louvain")
 for g in expression_quantified["train"].var.index:
     mean_t0 = expression_quantified["train"][expression_quantified["train"].obs["timepoint"]==0,g].X.mean()
     v = expression_quantified["train"][:,g].X - mean_t0
+    v = v / (0.00001 + np.sqrt(np.var(v)))
     assert all(pd.notnull(v)), g
     expression_quantified["train"][:,g].X = v
+expression_quantified["both"] = anndata.concat([expression_quantified["train"], expression_quantified["test"]])
+expression_quantified["both"].uns["perturbed_and_measured_genes"]      = expression_quantified["test"].uns["perturbed_and_measured_genes"]  
+expression_quantified["both"].uns["perturbed_but_not_measured_genes"]  = expression_quantified["test"].uns["perturbed_but_not_measured_genes"] 
+expression_quantified["both"].uns["perturbations_overlap"]             = expression_quantified["test"].uns["perturbations_overlap"] 
 
-for t in ("train", "test"):
+for t in ("train", "test", "both"):
     with warnings.catch_warnings():
         sc.tl.pca(expression_quantified[t], n_comps=10)
     sc.pp.neighbors(expression_quantified[t])
     sc.tl.louvain(expression_quantified[t])
     sc.tl.umap(expression_quantified[t])
 
-for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected"):
+for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected", "both_uncorrected"):
     print(f"Plotting {t}")
     vars_to_show = ["timepoint", "perturbation", "louvain", "sample", "lot"]
     for v in vars_to_show:
@@ -275,7 +284,10 @@ for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected"):
             print(f"Plots failed with error {repr(e)}")
     clusters = expression_quantified[t].obs[["louvain", "perturbation"]].value_counts().reset_index()
     clusters = clusters.groupby("louvain")["perturbation"].agg(func = lambda x: " ".join(np.sort(x)))
-    clusters.to_csv(f"../perturbations/fantom4/{t}/clusters.csv")
+    clusters.to_csv(f"../perturbations/fantom4/{t}/clusters.csv")    
+    # Now that we rescaled .X, we need to update .obs["expression_level_after_perturbation"]. (I violated DRY. Mea culpa.)
+    expression_quantified[t] = ingestion.describe_perturbation_effect( adata = expression_quantified[t], 
+                                                                       perturbation_type="knockdown", 
+                                                                       multiple_genes_hit = False)
     expression_quantified[t].write_h5ad(os.path.join("../perturbations/fantom4", f"{t}.h5ad"))
-
 load_perturbations.check_perturbation_dataset("fantom4")

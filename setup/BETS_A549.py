@@ -48,10 +48,13 @@ overexpression = anndata.AnnData(
     X   = pd.read_csv("../not_ready/BETS_A549/GSE144660_overexpression.tsv", index_col = 0, header = 0).T.sort_index(),
     obs = pd.read_csv("../not_ready/BETS_A549/GSE144660_metadata.tsv", sep="\t", header = None, index_col = 0).sort_index()
 )
+overexpression.obs.columns = ["perturbation", "treatment", "timepoint"]
+
 dex_away = anndata.AnnData(
     X   = pd.read_csv("../not_ready/BETS_A549/GSE144662_post_dex_removal.tsv", index_col = 0, header = 0).T.sort_index(),
     obs = pd.read_csv("../not_ready/BETS_A549/GSE144662_metadata.tsv", sep="\t", header = None, index_col = 0).sort_index()
 )
+dex_away.obs.columns = ["timepoint"]
 dex = anndata.AnnData(
     X = pd.concat(
         [
@@ -73,20 +76,22 @@ dex = anndata.AnnData(
     ).sort_index(),
     obs = pd.read_csv("../not_ready/BETS_A549/dex_metadata.tsv", index_col = 1, sep = " ", header = None).sort_index(),
 )
+dex.obs.columns = ["timepoint"]
 assert all(dex_away.var_names==dex.var_names), "feature names match"
 assert all(dex.var_names==overexpression.var_names), "feature names match"
 dex.var_names_make_unique()
 dex_away.var_names_make_unique()
 overexpression.var_names_make_unique()
-dex.obs.columns = ["timepoint"]
-dex_away.obs.columns = ["timepoint"]
-overexpression.obs.columns = ["perturbation", "treatment", "timepoint"]
-dex.obs["treatment"] = "dexamethasone"
+dex.obs[     "treatment"] = "dexamethasone"
 dex_away.obs["treatment"] = "dexamethasone removal"
+dex.obs[     "dataset"]   = "dexamethasone timecourse"
+dex_away.obs["dataset"]   = "dexamethasone removal timecourse"
 expression_quantified = dict()
 expression_quantified["train"] = anndata.concat([dex, dex_away])
 expression_quantified["test"]  = overexpression
 expression_quantified["test"].obs["timepoint"] = expression_quantified["test"].obs["timepoint"].str.replace("h", "").astype(float)
+expression_quantified["test"].obs["treatment"] = "dexamethasone"
+expression_quantified["test"].obs["dataset"] = "TF perturbations + dexamethasone"
 expression_quantified["train"].obs["timepoint"] = expression_quantified["train"].obs["timepoint"].str.replace("h", "").astype(float)
 # Label with perturbed genes
 expression_quantified["train"].obs["perturbation"] = "control"
@@ -157,10 +162,14 @@ expression_quantified["test"].obs["logFC"] = logFC
 correlations = ingestion.computeCorrelation(expression_quantified["test"], verbose=True)
 expression_quantified["test"].obs["spearmanCorr"] = correlations[0]
 expression_quantified["test"].obs[ "pearsonCorr"] = correlations[1]
+expression_quantified["both_uncorrected"] = anndata.concat(expression_quantified)
+expression_quantified["both_uncorrected"].uns["perturbed_and_measured_genes"]      = expression_quantified["test"].uns["perturbed_and_measured_genes"]  
+expression_quantified["both_uncorrected"].uns["perturbed_but_not_measured_genes"]  = expression_quantified["test"].uns["perturbed_but_not_measured_genes"] 
+expression_quantified["both_uncorrected"].uns["perturbations_overlap"]             = expression_quantified["test"].uns["perturbations_overlap"] 
 
 # Some basic exploration of results
 print("Data exploration")
-for t in ("train", "test"):
+for t in ("train", "test", "both_uncorrected"):
     print(f"Exploring {t}")
     sc.pp.log1p(expression_quantified[t])
     sc.pp.highly_variable_genes(expression_quantified[t], flavor = "seurat_v3", n_top_genes=expression_quantified[t].shape[1])
@@ -170,25 +179,49 @@ for t in ("train", "test"):
     sc.tl.louvain(expression_quantified[t])    
     sc.tl.umap(expression_quantified[t])
 
-# Regress out suspected nuisance effects
-#
 expression_quantified[f"train_uncorrected"] = expression_quantified["train"].copy()
 expression_quantified[ f"test_uncorrected"] = expression_quantified[ "test"].copy()
-sc.pp.regress_out(expression_quantified["test"], "louvain")
-sc.pp.regress_out(expression_quantified["train"], ["louvain", "treatment"])
-expression_quantified["both"] = anndata.concat(expression_quantified)
-for t in ("both", "test_uncorrected", "train_uncorrected"):
-    sc.pp.log1p(expression_quantified[t])
-    sc.pp.highly_variable_genes(expression_quantified[t], flavor = "seurat_v3", n_top_genes=expression_quantified[t].shape[1])
+
+dexplus  = expression_quantified["train"].obs["treatment"]=="dexamethasone"
+dexminus = expression_quantified["train"].obs["treatment"]=="dexamethasone removal"
+is_time_0  = expression_quantified["train"].obs["timepoint"]==0 
+is_time_12 = expression_quantified["train"].obs["timepoint"]==12 
+for g in expression_quantified["train"].var.index:
+    # Splice together time 0 -dex and time 12 +dex within timecourse
+    v = expression_quantified["train"][:,g].X
+    mean_t0dm  = v[is_time_0  & dexminus].mean()
+    mean_t12dp = v[is_time_12 & dexplus].mean()
+    v[dexminus]-= mean_t0dm
+    v[dexplus] -= mean_t12dp
+    
+    # Splice together time 0 +dex and time-zero perturbation controls.
+    mean_t0dp = expression_quantified["train"][is_time_0 & dexplus, g].X.mean()
+    w = expression_quantified["test"][:,g].X
+    mean_t0_controls = w[expression_quantified["test"].obs["is_control"] & expression_quantified["test"].obs["timepoint"]==0].mean()
+    w -= mean_t0_controls
+    v -= mean_t0dp
+
+    # Write the transformed expression back into the anndata objects
+    expression_quantified["train"][:,g].X = v
+    expression_quantified["test" ][:,g].X = w
+
+# Update variable gene selection
+expression_quantified["both"] = anndata.concat([expression_quantified["train"], expression_quantified["test"]])
+expression_quantified["both"].uns["perturbed_and_measured_genes"]      = expression_quantified["test"].uns["perturbed_and_measured_genes"]  
+expression_quantified["both"].uns["perturbed_but_not_measured_genes"]  = expression_quantified["test"].uns["perturbed_but_not_measured_genes"] 
+expression_quantified["both"].uns["perturbations_overlap"]             = expression_quantified["test"].uns["perturbations_overlap"] 
+
+expression_quantified["both"].var = expression_quantified["train"].var
+for t in ("both", "test", "train"):
     with warnings.catch_warnings():
         sc.tl.pca(expression_quantified[t], n_comps=20)
     sc.pp.neighbors(expression_quantified[t])
     sc.tl.louvain(expression_quantified[t])
     sc.tl.umap(expression_quantified[t])
 
-for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected"):
+for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected", "both_uncorrected"):
     print(f"Plotting {t}")
-    vars_to_show = ["timepoint", "perturbation", "louvain", "treatment"]
+    vars_to_show = ["timepoint", "perturbation", "louvain", "treatment", "dataset"]
     for v in vars_to_show:
         fig = sc.pl.umap(expression_quantified[t], color = v, show = False, legend_loc='on data')
         try:
@@ -199,6 +232,10 @@ for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected"):
     clusters = expression_quantified[t].obs[["louvain", "perturbation"]].value_counts().reset_index()
     clusters = clusters.groupby("louvain")["perturbation"].agg(func = lambda x: " ".join(np.sort(x)))
     clusters.to_csv(f"../perturbations/BETS_A549/{t}/clusters.csv")
+    # Now that we rescaled .X, we need to update .obs["expression_level_after_perturbation"]. (I violated DRY. Mea culpa.)
+    expression_quantified[t] = ingestion.describe_perturbation_effect( adata = expression_quantified[t], 
+                                                                       perturbation_type="knockdown", 
+                                                                       multiple_genes_hit = False)
     expression_quantified[t].write_h5ad(os.path.join("../perturbations/BETS_A549", f"{t}.h5ad"))
 
 load_perturbations.check_perturbation_dataset("BETS_A549")
