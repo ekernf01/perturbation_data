@@ -2,19 +2,15 @@
 - timeseries:
     - Is there any genetic perturbation data in the same type of cells as this nice time-course? https://pubmed.ncbi.nlm.nih.gov/17913878/ Maybe this study?  https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9900787/
     - Other THP-1
-        - [ECCITE-seq THP-1 data](https://www.nature.com/articles/s41588-021-00778-2#Sec11) also refers to a genome-wide screen!
-        - [CarPOOL-seq THP1 data](https://www.nature.com/articles/s41592-022-01705-x) to go with FANTOM4??
-    - ENCODE perturbation data used by [SCENIC+ paper](https://www.nature.com/articles/s41592-023-01938-4) 
+        - Satija group [ECCITE-seq THP-1 data](https://www.nature.com/articles/s41588-021-00778-2#Sec11) and [CarPOOL-seq THP1 data](https://www.nature.com/articles/s41592-022-01705-x); also Gazova time-series 
+    - ENCODE perturbation data used by [SCENIC+ paper](https://www.nature.com/articles/s41592-023-01938-4)
     - [KnockTF data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6943067/) as used by [Dictys](https://www.biorxiv.org/content/10.1101/2022.09.14.508036v1.full.pdf)
     - Treutlein group brain organoids [here](https://www.nature.com/articles/s41586-022-05279-8) and [here](https://www.nature.com/articles/s41586-023-06473-y)
     - CO demos:
         - Zebrafish:
         - Paul: myeloid progenitor differentiation
         - Setty: hematopoiesis
-    - PRESCIENT demos: 
-    - ENCODE keratinocyte data? https://reporter.nih.gov/project-details/8770333; https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8763320/
     - BMDC timeseries https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5876141/ plus Dixit BMDC perturb-seq or [Parnas 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4522370/), which also has a genome-wide CRISPR screen
-    - Additional experiments with A549 from GSE147405
     - Endoderm differentiation: Genga, Cuomo, and Beer/Huangfu screen
         - time-course https://www.nature.com/articles/s41467-020-14457-z
         - perturb-seq https://pubmed.ncbi.nlm.nih.gov/30995470/
