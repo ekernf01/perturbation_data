@@ -2,7 +2,7 @@ import scanpy as sc
 import numpy as np
 import pandas as pd
 import anndata
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, vstack
 # local
 import importlib
 import sys
@@ -21,7 +21,7 @@ orfs = expression_quantified.obs["TF"].unique()
 aggs = []
 for i,orf in enumerate(orfs):
     try:
-        agg = sc.read_h5ad(f"../not_ready/{orf}.h5ad")
+        agg = sc.read_h5ad(f"../not_ready/joung/{orf}.h5ad")
     except:
         chunk = expression_quantified[expression_quantified.obs["TF"]==orf, :].to_memory()
         chunk.raw = anndata.AnnData(X = np.exp(chunk.X)-1, var = chunk.var, obs = chunk.obs)
@@ -42,12 +42,12 @@ for i,orf in enumerate(orfs):
         sc.tl.score_genes_cell_cycle(chunk, s_genes=S_genes_hum, g2m_genes=G2M_genes_hum)
         chunk.obs["is_control"] = False
         agg = ingestion.aggregate_by_perturbation(chunk, group_by = ["TF", "batch", "phase"])
-        agg.write_h5ad(f"../not_ready/{orf}.h5ad")    
+        agg.write_h5ad(f"../not_ready/joung{orf}.h5ad")    
     aggs.append(agg)
 
 finished = anndata.AnnData(
-    X   = np.concat([agg.X for agg in aggs]), 
+    X   = vstack([agg.X for agg in aggs]), 
     obs = pd.concat([agg.obs for agg in aggs]), 
     var = pd.concat([agg.var for agg in aggs]), 
 )
-finished.write_h5ad("../not_ready/GSE217460_210322_TFAtlas_aggregated.h5ad")
+finished.write_h5ad("../not_ready/joung/GSE217460_210322_TFAtlas_aggregated.h5ad")
