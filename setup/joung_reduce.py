@@ -48,7 +48,7 @@ for i,_ in enumerate(orfs):
         sc.tl.score_genes_cell_cycle(chunk, s_genes=S_genes_hum, g2m_genes=G2M_genes_hum)
         # Convert back to raw counts 
         chunk.X.data = np.exp(chunk.X.data)-1
-        chunk.X = chunk.X.dot(diags(chunk.obs["n_counts"]/1e4))
+        chunk.X = diags(chunk.obs["n_counts"]/1e4).dot(chunk.X)
         chunk.raw = chunk
 
         # Add raw counts within each perturbation and CC assignment
