@@ -60,8 +60,8 @@ for i,_ in enumerate(orfs):
         gc.collect()
 
 finished = anndata.AnnData(
-    X   =    vstack([agg.X for agg in aggs[0:5]]), 
-    obs = pd.concat([agg.obs for agg in aggs[0:5]]), 
-    var = pd.concat([agg.var for agg in aggs[0:5]]), 
+    X   =    vstack([agg.X for agg in aggs]), 
+    obs = pd.concat([agg.obs for agg in aggs]), 
+    var = pd.concat([agg.var for agg in aggs]), 
 )
 finished.write_h5ad("../not_ready/joung/GSE217460_210322_TFAtlas_aggregated.h5ad")
