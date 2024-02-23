@@ -2,7 +2,9 @@ import scanpy as sc
 import numpy as np
 import pandas as pd
 import anndata
-from scipy.sparse import csr_matrix, vstack
+from scipy.sparse import csr_matrix, vstack, diags
+import gc
+
 # local
 import importlib
 import sys
@@ -46,14 +48,16 @@ for i,_ in enumerate(orfs):
         sc.tl.score_genes_cell_cycle(chunk, s_genes=S_genes_hum, g2m_genes=G2M_genes_hum)
         # Convert back to raw counts 
         chunk.X.data = np.exp(chunk.X.data)-1
+        chunk.X = chunk.X.dot(diags(chunk.obs["n_counts"]/1e4))
         chunk.raw = chunk
-        for i,cell in enumerate(chunk.obs_names):
-            chunk.raw.X[i, :] = chunk.raw[cell, :].X*chunk.obs["n_counts"][cell]/1e4
+
         # Add raw counts within each perturbation and CC assignment
         chunk.obs["is_control"] = False
         agg = ingestion.aggregate_by_perturbation(chunk, group_by = ["TF", "batch", "phase"])
         agg.write_h5ad(f"../not_ready/joung/{orf}.h5ad")    
         aggs.append(agg)
+        del chunk
+        gc.collect()
 
 finished = anndata.AnnData(
     X   =    vstack([agg.X for agg in aggs[0:5]]), 
