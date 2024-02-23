@@ -50,18 +50,13 @@ for i,_ in enumerate(orfs):
         chunk.X.data = np.exp(chunk.X.data)-1
         chunk.X = diags(chunk.obs["n_counts"]/1e4).dot(chunk.X)
         chunk.raw = chunk
-
         # Add raw counts within each perturbation and CC assignment
         chunk.obs["is_control"] = False
         agg = ingestion.aggregate_by_perturbation(chunk, group_by = ["TF", "batch", "phase"])
         agg.write_h5ad(f"../not_ready/joung/{orf}.h5ad")    
-        aggs.append(agg)
         del chunk
         gc.collect()
+    aggs.append(agg.copy())
 
-finished = anndata.AnnData(
-    X   =    vstack([agg.X for agg in aggs]), 
-    obs = pd.concat([agg.obs for agg in aggs]), 
-    var = pd.concat([agg.var for agg in aggs]), 
-)
+finished = anndata.concat(aggs)
 finished.write_h5ad("../not_ready/joung/GSE217460_210322_TFAtlas_aggregated.h5ad")
