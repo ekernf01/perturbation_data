@@ -109,7 +109,7 @@ def describe_perturbation_effect(adata: anndata.AnnData, perturbation_type, mult
 
     Args:
         adata (anndata.AnnData): A perturbation dataset
-        perturbation_type (typing.Union): one of {"overexpression", "knockout", "knockdown"}, or if mixed, an iterable of length equal to n_samples.
+        perturbation_type: one of {"overexpression", "knockout", "knockdown"}, or if mixed, an iterable of length equal to n_samples.
         multiple_genes_hit: Set to True if there observations with multiple genes perturbed.
     Raises:
         ValueError: Triggered by invalid perturbation types.

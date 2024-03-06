@@ -52,7 +52,7 @@ for i,_ in enumerate(orfs):
         chunk.raw = chunk
         # Add raw counts within each perturbation and CC assignment
         chunk.obs["is_control"] = False
-        agg = ingestion.aggregate_by_perturbation(chunk, group_by = ["TF", "batch", "phase"])
+        agg = ingestion.aggregate_by_perturbation(chunk, group_by = ["TF", "batch", "phase"], use_raw=True)
         agg.write_h5ad(f"../not_ready/joung/{orf}.h5ad")    
         del chunk
         gc.collect()
