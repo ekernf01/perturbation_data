@@ -5,7 +5,7 @@ This is a collection of uniformly formatted perturbation datasets, accompanied b
 
 If you are seeing this on Github: the expression data are too big to put on GitHub, but they are on Zenodo (DOI: 10.5281/zenodo.10363068). 
 
-If you are seeing this on Zenodo, you can download the data to any permanent location and access it via our [data loader package](https://github.com/ekernf01/load_perturbations). 
+If you are seeing this on Zenodo, you can download the data to any permanent location and access it via our [data loader package](https://github.com/ekernf01/pereggrn_perturbations). 
 
 ### Format details 
 
@@ -23,7 +23,7 @@ Every AnnData object in the collection conforms to certain expectations. To add 
 
 - add and fill a row starting with your dataset's name in `perturbations.csv`.
 - save an AnnData object in `perturbation_data/perturbations/<dataset_name>/test.h5ad`.
-- ensure that the result passes the assertions done by `load_perturbations.check_perturbation_dataset()`.
+- ensure that the result passes the assertions done by `pereggrn_perturbations.check_perturbation_dataset()`.
 
 This README may be out of date (the checker function is authoritative), but here are some key requirements as of 2023 Nov 02.
 

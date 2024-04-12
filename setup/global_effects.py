@@ -81,10 +81,10 @@ def calcMI(treatment: np.ndarray, control: np.ndarray, bins: int=100, verbose: b
     return np.median(miList)
     
 
-def computeFoldChangeStats(treatment: np.ndarray, control: np.ndarray):
+def computeFoldChangeStats(treatment: np.ndarray, control: np.ndarray, pseudocount = 0):
     """ Compute the log fold change between the treatment group and
     the control group across all genes. """
-    logFCStat = np.abs(np.nanmedian(np.log2(treatment / control), axis=0))
+    logFCStat = np.abs(np.nanmedian(np.log2( (treatment + pseudocount) / (control + pseudocount) ), axis=0))
     logFCStat = logFCStat[np.isfinite(logFCStat)]
     
     return (np.mean(logFCStat), 
@@ -122,7 +122,8 @@ def quantifyEffect(
     diffExprFC=True, 
     prefix: str="",
     withDEG: bool=True,
-    withMI: bool=True
+    withMI: bool=True, 
+    pseudocount = 0
 ) -> tuple[np.ndarray]:
     """ Compute the metrics that evaluate the global transcriptomic effect size 
     of each perturbation
@@ -134,6 +135,7 @@ def quantifyEffect(
     diffExprFC (bool): when counting the number of differentially
                        expressed genes, whether to threshold based
                        on log fold change or not.
+    pseudocount (float): pseudocount to use when computing logfc from normalized expression values
     """
     try:
         if group:
@@ -188,7 +190,7 @@ def quantifyEffect(
                 mutualInfo .append(calcMI                (t[:,columnToKeep], 
                                                           c[:,columnToKeep], 
                                                           100))
-            outStat    .append(computeFoldChangeStats(t, c))
+            outStat    .append(computeFoldChangeStats(t, c, pseudocount))
 
             
         if withDEG:

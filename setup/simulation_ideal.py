@@ -16,15 +16,15 @@ import ingestion
 import matplotlib.pyplot as plt
 
 # Access our code
-import load_perturbations
-import load_networks
+import pereggrn_perturbations
+import pereggrn_networks
 import ggrn_backend3.api as ggrn_autoregressive
 
 # Access our data collections
-load_networks.set_grn_location(
+pereggrn_networks.set_grn_location(
     '../../network_collection/networks'
 )
-load_perturbations.set_data_path(
+pereggrn_perturbations.set_data_path(
     '../../perturbation_data/perturbations'
 )
 DEFAULT_HUMAN_TFs = pd.read_csv("../../accessory_data/humanTFs.csv")
@@ -46,8 +46,8 @@ for true_network in [
         "cellnet_human_Hugene"  ,
     ]:
     # If we generate the data via a network structure available to GGRN, can we beat the mean + median in the basic experiments?
-    network_edges = load_networks.load_grn_all_subnetworks(true_network)
-    network_edges = load_networks.pivotNetworkLongToWide(network_edges)
+    network_edges = pereggrn_networks.pereggrn_grn_all_subnetworks(true_network)
+    network_edges = pereggrn_networks.pivotNetworkLongToWide(network_edges)
     network_edges.index = network_edges["gene_short_name"]
 
     # Make it square, symmetric, and TFs-only.
