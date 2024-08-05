@@ -43,13 +43,15 @@ for t in ["train", "test"]:
 
 subsets = {
     "endoderm": ["liver", "intestine", "pancreas", "pharynx"], # saunders does not include the pharynx, but it's just a little more anterior than the liver
-    "axial mesoderm": ["notochord", "mesodermal progenitor cells (contains PSM)"], # vacuolar and sheath cells are not separately annotated
-    "pigment cells":["iridophore", "melanophore", "xanthophore", "cranial neural crest", "neural crest + pigment cell progenitor"], 
+    "axial _mesoderm": ["notochord", "mesodermal progenitor cells (contains PSM)"], # vacuolar and sheath cells are not separately annotated
+    "pigment_cells":["iridophore", "melanophore", "xanthophore", "cranial neural crest", "neural crest + pigment cell progenitor"], 
     "blood": ["myeloid cell", "red blood cell"], # No thrombocytes
 }
 
 for subset_name, cell_types in subsets.items():
+    print(subset_name)
     for t in ["train", "test"]:
+        print(t)
         subset = expression_quantified[t][expression_quantified[t].obs["cell_type"].isin(cell_types), :]
         if t=="train":
             sc.pp.highly_variable_genes(subset, n_bins=50, n_top_genes = subset.var.shape[0], flavor = "seurat_v3" )

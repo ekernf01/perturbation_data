@@ -10,7 +10,7 @@
 # - add specific metadata needed by our benchmarking framework
 # - check to see if KO'd genes have lower transcript levels
 # - check for low quality cells
-# - Make metacells or otherwise aggregate
+# - Aggregate within each embryo and cell type
 # - normalize and log-transform 
 # - exclude low-expressed genes and select HVG
 # - visualize
@@ -144,7 +144,7 @@ expression_quantified["test"].uns["perturbed_but_not_measured_genes"] = list(per
 expression_quantified["test"].uns["perturbations_overlap"] = True
 expression_quantified["test"] = ingestion.describe_perturbation_effect(expression_quantified["test"], "knockout", multiple_genes_hit = True)
 expression_quantified["train"].obs["expression_level_after_perturbation"] = np.nan # This will be ignored anyway
-expression_quantified["train"].obs["perturbation_type"] = np.nan # This will be ignored anyway
+expression_quantified["train"].obs["perturbation_type"] = "knockout" # Since predictions will be compared to KO's in the test set
 status, logFC = ingestion.checkConsistency(expression_quantified["test"], 
                                            perturbationType="knockout", 
                                            group="embryo",
