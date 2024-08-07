@@ -16,6 +16,7 @@
         - perturb-seq https://pubmed.ncbi.nlm.nih.gov/30995470/
         - screen https://pubmed.ncbi.nlm.nih.gov/31110351/
 - other:
+    - Southard TF-ome CRISPRa: https://biorxiv.org/content/10.1101/2024.07.31.606073v1
     - Bock T-cell datasets (available in sc-perturb collection)
         - https://www.nature.com/articles/s41592-021-01153-z
         - https://www.nature.com/articles/nmeth.4177
