@@ -6,4 +6,5 @@ for dataset_name in pereggrn_perturbations.load_perturbation_metadata().query("i
     try:
         pereggrn_perturbations.check_perturbation_dataset(dataset_name)
     except Exception as e:
+        print("=================== Error in " + dataset_name + " ===================")
         print(repr(e))

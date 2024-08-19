@@ -43,7 +43,7 @@ for t in ["train", "test"]:
 
 subsets = {
     "endoderm": ["liver", "intestine", "pancreas", "pharynx"], # saunders does not include the pharynx, but it's just a little more anterior than the liver
-    "axial _mesoderm": ["notochord", "mesodermal progenitor cells (contains PSM)"], # vacuolar and sheath cells are not separately annotated
+    "axial_mesoderm": ["notochord", "mesodermal progenitor cells (contains PSM)"], # vacuolar and sheath cells are not separately annotated
     "pigment_cells":["iridophore", "melanophore", "xanthophore", "cranial neural crest", "neural crest + pigment cell progenitor"], 
     "blood": ["myeloid cell", "red blood cell"], # No thrombocytes
 }
