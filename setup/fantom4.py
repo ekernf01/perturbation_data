@@ -23,7 +23,7 @@
 # We are currently using only E-GEAD-546 and E-GEAD-547. 
 # 
 # The mapping of probes to genes was provided by Illumina support, downloaded 2023 Oct 03 (not a typo; it was exactly one 
-# year later than the date above). 
+# year later than the date above; do not judge me). 
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -44,18 +44,9 @@ import sys
 sys.path.append("setup")
 import ingestion
 importlib.reload(ingestion)
-import load_perturbations
-load_perturbations.set_data_path("../../perturbation_data/perturbations")
+import pereggrn_perturbations
+pereggrn_perturbations.set_data_path("../../perturbation_data/perturbations")
 
-#      visualization settings
-plt.rcParams['figure.figsize'] = [6, 4.5]
-plt.rcParams["savefig.dpi"] = 300
-
-
-# Universal
-geneAnnotationPath = "../accessory_data/gencode.v35.annotation.gtf.gz"       # Downloaded from https://www.gencodegenes.org/human/release_35.html
-humanTFPath = "../accessory_data/humanTFs.csv"                               # Downloaded from http://humantfs.ccbr.utoronto.ca/download.php
-humanEpiPath = "../accessory_data/epiList.csv"                               # Downloaded from https://epifactors.autosome.org/description 
 
 finalDataFileFolder = "../perturbations/fantom4"
 sc.settings.figdir = finalDataFileFolder
@@ -105,7 +96,12 @@ for k in sample_list.keys():
 # Label with timestamps
 expression_quantified["train"].obs["timepoint"] = [float(s.split("_")[1].replace("h.txt", ""))
                                                    for s in expression_quantified["train"].obs.index]
-expression_quantified["test"].obs["timepoint"] = 48 # See supp info section "perturbation experiments" pages 13-14
+# Perturbations lasted 48 hours. 
+# See supp info section "perturbation experiments" pages 13-14
+# However, we mark this as 0 because cells were not exposed to PMA. 
+# In terms of the timeseries data, this makes them most similar to timepoint 0.
+expression_quantified["test"].obs["timepoint"] = 0 
+
 
 # Label with celltypes
 expression_quantified["train"].obs["cell_type"] = "THP-1"
@@ -266,6 +262,7 @@ expression_quantified["both"].uns["perturbed_but_not_measured_genes"]  = express
 expression_quantified["both"].uns["perturbations_overlap"]             = expression_quantified["test"].uns["perturbations_overlap"] 
 
 for t in ("train", "test", "both"):
+    print(f"After correction, exploring {t}")
     with warnings.catch_warnings():
         sc.tl.pca(expression_quantified[t], n_comps=10)
     sc.pp.neighbors(expression_quantified[t])
@@ -274,7 +271,7 @@ for t in ("train", "test", "both"):
 
 for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected", "both_uncorrected"):
     print(f"Plotting {t}")
-    vars_to_show = ["timepoint", "perturbation", "louvain", "sample", "lot"]
+    vars_to_show = ["timepoint", "perturbation", "louvain", "sample", "lot", "is_control_int"]
     for v in vars_to_show:
         fig = sc.pl.umap(expression_quantified[t], color = v, show = False, legend_loc='on data')
         try:
@@ -290,4 +287,4 @@ for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected", "bot
                                                                        perturbation_type="knockdown", 
                                                                        multiple_genes_hit = False)
     expression_quantified[t].write_h5ad(os.path.join("../perturbations/fantom4", f"{t}.h5ad"))
-load_perturbations.check_perturbation_dataset("fantom4")
+pereggrn_perturbations.check_perturbation_dataset("fantom4")
