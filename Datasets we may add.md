@@ -6,16 +6,10 @@
     - ENCODE perturbation data used by [SCENIC+ paper](https://www.nature.com/articles/s41592-023-01938-4)
     - [KnockTF data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6943067/) as used by [Dictys](https://www.biorxiv.org/content/10.1101/2022.09.14.508036v1.full.pdf)
     - Treutlein group brain organoids [here](https://www.nature.com/articles/s41586-022-05279-8) and [here](https://www.nature.com/articles/s41586-023-06473-y)
-    - CellOracle demos:
-        - Zebrafish
-        - Paul: myeloid progenitor differentiation
-        - Setty: hematopoiesis
     - BMDC timeseries https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5876141/ plus Dixit BMDC perturb-seq or [Parnas 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4522370/), which also has a genome-wide CRISPR screen
-    - Endoderm differentiation: Genga, Cuomo, and Beer/Huangfu screen
-        - time-course https://www.nature.com/articles/s41467-020-14457-z
-        - perturb-seq https://pubmed.ncbi.nlm.nih.gov/30995470/
-        - screen https://pubmed.ncbi.nlm.nih.gov/31110351/
+    - Endoderm differentiation screen https://pubmed.ncbi.nlm.nih.gov/31110351/
 - other:
+    - Tian et al neurons https://www.nature.com/articles/s41593-021-00862-0
     - Southard TF-ome CRISPRa: https://biorxiv.org/content/10.1101/2024.07.31.606073v1
     - Bock T-cell datasets (available in sc-perturb collection)
         - https://www.nature.com/articles/s41592-021-01153-z
@@ -31,6 +25,7 @@
     - 2016 K562 perturb-seq data: is it consistent with big modern K562 perturb-seq?
     - List here may be useful: https://www.sciencedirect.com/science/article/pii/S2405471221002027
     - IPS-derived neurons: https://www.sciencedirect.com/science/article/pii/S0896627319306403?via%3Dihub
+    - yeast https://www.cell.com/cell/fulltext/S0092-8674(14)00342-0?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0092867414003420%3Fshowall%3Dtrue
 
 ##### ENCODE data use policy
 

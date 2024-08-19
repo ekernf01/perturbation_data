@@ -11,7 +11,7 @@ If you are seeing this on Zenodo, you can download the data to any permanent loc
 
 Metadata listing data sources, number of perturbations, and other summaries are stored in `perturbations/perturbations.csv`. 
 
-Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/latest/index.html) objects in `train.h5ad` and `test.h5ad`. Some may lack separate training data, having only `test.h5ad`. When there is a separate training dataset, it will usually come from the same biological system or set of cell types as the test data, but it will lack perturbations and it will have time-series measurements. 
+Each network is stored as a pair of [AnnData](https://anndata.readthedocs.io/en/latest/index.html) objects in `train.h5ad` and `test.h5ad`. Some may lack separate training data, having only `test.h5ad`. When there is a separate training dataset, it will usually come from the same biological system or set of cell types as the test data, but it will lack perturbations and it will have time-series measurements. Some datasets also have a `screen.csv`, which summarizes gross phenotypic outcomes across many genes.
 
 ### Preprocessing
 
@@ -25,9 +25,10 @@ Every AnnData object in the collection conforms to certain expectations. To add 
 - save an AnnData object in `perturbation_data/perturbations/<dataset_name>/test.h5ad`.
 - ensure that the result passes the assertions done by `pereggrn_perturbations.check_perturbation_dataset()`.
 
-This README may be out of date (the checker function is authoritative), but here are some key requirements as of 2023 Nov 02.
+This README may be out of date (the checker function is authoritative), but here are some key requirements current as of 2024 Aug 16.
 
-- There must be a file `test.h5ad` containing perturbation transcriptomics data, and optionally a file `train.h5ad` containing time-series data from the same system.
+- There must be a file `test.h5ad` containing perturbation transcriptomics data, and optionally a file `train.h5ad` containing time-series data from the same system. Another optional file is `screen.csv` containing gross phenotypic outcomes (not the full transcriptome) of genetic perturbations.
+- If `screen.csv` is present, then reading it via `pd.read_csv()` must yield a dataframe with a column `perturbation` containing the names of the genes perturbed. 
 - Each h5ad must have a column `"perturbation"` in `.obs` with dtype `str`, indicating what gene or genes are perturbed (e.g. `"FOXN1"` or `"FOXN1,PAX9"`).
 - Each must have a boolean column in `.obs` called `"is_control"`, with the obvious meaning.
 - Each must have a column `gene_rank` in `.var` containing a positive integer rank for each gene (lower values are more interesting; we might select e.g. the bottom 1,000 genes). 
