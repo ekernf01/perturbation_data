@@ -1,5 +1,5 @@
 
-This is a collection of uniformly formatted perturbation datasets, accompanied by the code used to acquire and clean the data. This part of our [benchmarking project](https://github.com/ekernf01/perturbation_benchmarking). These data all measure the transcriptome, and every test dataset includes measurements after a genetic knockout or knockdown or overexpression experiment. These datasets are all from human cells. The main differences among these datasets are the cell type, data type (e.g. microarray vs scRNA-seq), and scale (dozens to thousands of perturbations). 
+This is a collection of uniformly formatted perturbation datasets, accompanied by the code used to acquire and clean the data. This part of our [benchmarking project](https://github.com/ekernf01/perturbation_benchmarking). These data all measure the transcriptome, and every test dataset includes measurements after a genetic knockout or knockdown or overexpression experiment. These datasets are mostly from human cells, with some mouse, zebrafish, or simulated data. The main differences among these datasets are the cell type, data type (e.g. microarray vs scRNA-seq), scale (dozens to thousands of perturbations), and presence/absence of time-series data. 
 
 ### Installation and usage
 
