@@ -1,9 +1,7 @@
-# %% [markdown]
 # ### Mouse hematopoiesis 
 # 
 # This notebook ingests a dataset from a paper about myeloid progenitor transcriptional heterogeneity ([Paul et al 2015](https://pubmed.ncbi.nlm.nih.gov/26627738/)). We reformat the data, conduct exploratory analysis, and annotate cell types. 
 
-# %%
 # Get required libraries
 import pandas as pd
 import scanpy as sc
@@ -13,15 +11,16 @@ import pereggrn_perturbations as dc # the data checker (dc)
 import scipy.sparse
 import re
 import os
+from scipy.stats import rankdata as rank
+from sklearn.neighbors import KNeighborsRegressor
+import ggrn.api as ggrn
 
-# %%
 # Load the main dataframe
 df = pd.read_csv('../not_ready/paul/GSE72857_umitab.txt', sep='\t')
 
 # Load the experimental design table
 exp_design = pd.read_csv('../not_ready/paul/GSE72857_experimental_design.txt', sep='\t', skiprows=19)
 
-# %% [markdown]
 # ##### Isolating the Wildtype and Perturbations
 # 
 # The data is currently stored in two files:
@@ -30,7 +29,6 @@ exp_design = pd.read_csv('../not_ready/paul/GSE72857_experimental_design.txt', s
 # 
 # Our next step will be merging the main dataframe with the experimental design table using the well IDs to have the data for wildtype and perturbations.
 
-# %%
 # Transpose the main dataframe for merging
 df_t = df.T
 df_t.index.name = 'Well_ID'
@@ -40,7 +38,6 @@ df_t.index.name = 'Well_ID'
 merged_df = df_t.merge(exp_design, left_index=True, right_on='Well_ID', how='left')
 merged_df.set_index('Well_ID', inplace=True)
 
-# %% [markdown]
 # ##### Creating the AnnData Structures
 # 
 # Before transposing the matrix, the data appears to have gene names as row indices and sample/cell names as column headers.
@@ -48,7 +45,6 @@ merged_df.set_index('Well_ID', inplace=True)
 # 
 # Do the following to convert the txt file to h5ad and add the necessary metadata:
 
-# %%
 # Extract gene names and expression data
 merged_gene_columns = [col for col in merged_df.select_dtypes(include=[np.number]).columns if col not in exp_design]
 merged_numeric_data = merged_df[merged_gene_columns]
@@ -77,15 +73,11 @@ adata_merged.obs['FcgR3_measurement'] = merged_df['FcgR3_measurement'].values
 adata_merged.obs["well_row"]    = adata_merged.obs["well_coordinates"].str.extract(r"([A-Z])\d+")[0]
 adata_merged.obs["well_column"] = adata_merged.obs["well_coordinates"].str.extract(r"([0-9]+)")[0]
 
-# %% [markdown]
-# ##### Labeling by Cell Type
+# #### Labeling by Cell Type
 # 
 # To label by cell types, we'll have to process the data, perform PCA & clustering, and label based on the clusters and our knowledge of the sequence and relations of cell types in human hematopoiesis.
 
-# %% [markdown]
-# - Exclude cells with RNA count <1000, then normalize and apply log transformation
-
-# %%
+# ##### Exclude cells with RNA count <1000, then normalize and apply log transformation
 # Calculate the total counts per cell
 adata_merged.obs['total_counts'] = adata_merged.X.sum(axis=1)
 adata_merged.obs['log10_total_counts'] = np.log10(adata_merged.obs['total_counts'])
@@ -96,7 +88,6 @@ adata_merged = adata_merged[adata_merged.obs['total_counts'] >= 1000, :].copy()
 # Verify filtering step
 print(f"Total cells after filtering: {adata_merged.n_obs}")
 
-# %%
 # Normalize each cell by the total counts, then multiply by a scaling factor (e.g., 10,000)
 adata_merged.X = adata_merged.X / adata_merged.obs['total_counts'].values[:, None] * 10000
 
@@ -109,7 +100,6 @@ adata_merged.X = adata_merged.X.tocsr()
 # Verify normalization and log transformation
 print(f"Data after normalization and log transformation (top left corner):\n{adata_merged.X.A[0:5, 0:5]}")
 
-# %%
 # Check the dimensions of the filtered data
 print(f"adata_filtered shape: {adata_merged.shape}")
 
@@ -120,13 +110,11 @@ else:
     print("No NaN values found in the data.")
 
 
-# %% [markdown]
 # We run a typical exploratory analysis: variable gene selection, PCA, nearest-neighbors, diffusion maps, and modularity-minimizing graph clustering.
 
-# %%
 sc.pp.highly_variable_genes(adata_merged, n_bins=50, n_top_genes = adata_merged.var.shape[0], flavor = "seurat_v3" )
 sc.tl.pca(adata_merged, svd_solver='arpack', n_comps=50)
-sc.pp.neighbors(adata_merged, n_neighbors=4, n_pcs=20)
+sc.pp.neighbors(adata_merged, n_neighbors=4, n_pcs=20, )
 sc.tl.umap(adata_merged)
 sc.tl.diffmap(adata_merged)
 sc.tl.louvain(adata_merged, resolution=0.8)
@@ -149,35 +137,19 @@ sc.tl.score_genes_cell_cycle(
 )
 adata_merged.write_h5ad('../not_ready/paul/paul_clustered_but_not_annotated.h5ad')
 
-# %%
 # PAGA graph construction
 sc.tl.paga(adata_merged, groups='louvain')
 plt.rcParams["figure.figsize"] = [6, 4.5]
-sc.pl.paga(adata_merged)
-
-# Label PAGA graph
+sc.pl.paga(adata_merged, show=False)
 sc.tl.draw_graph(adata_merged, init_pos='paga', random_state=123)
-sc.pl.draw_graph(adata_merged, color='louvain', legend_loc='on data')
 
-# %% [markdown]
-# Add the required metadata:
-# 
-# - highly_variable_rank
-# - perturbation
-# - is_control
-# - expression_level_after_perturbation
-# - perturbation_type
-# - perturbed_and_measured_genes
-# - perturbed_but_not_measured_genes
-
-# %%
 # Rank genes based on the high variability information provided by Scanpy
 adata_merged.var['highly_variable_rank'] = np.argsort(~adata_merged.var['highly_variable'].values)
 
 # Is control: Infer from 'Batch_desc'
 adata_merged.obs['is_control'] = adata_merged.obs['Batch_desc'].apply(lambda x: False if 'KO' in str(x) else True)
 
-# Perturbation: Use 'Batch_desc' to infer perturbations
+# Perturbation: Use 'Batch_desc' to determine perturbations
 adata_merged.obs['perturbation'] = adata_merged.obs['Batch_desc'].apply(
     lambda x: 'Cebpa' if 'Cebpa KO' in x else ('Cebpe' if 'Cebpe KO' in x else ('Cebpe control' if 'Cebpe control' in x else ('Cebpa control' if 'Cebpa control' in x else 'None')))
 )
@@ -200,7 +172,6 @@ perturbed_but_not_measured_genes = []
 # Store these lists in the uns attribute
 adata_merged.uns['perturbed_but_not_measured_genes'] = perturbed_but_not_measured_genes
 
-# %%
 plt.rcParams["figure.figsize"] = [12, 8]
 markers = {
     "Erythroids": ["Gata1", "Gfi1b", "Car1", "Car2", "Klf1", "Zfpm1", "Cpox", "Beta-s", "Hbb-b1", "Hba-a2"],
@@ -211,7 +182,7 @@ markers = {
     "Monocytes": ["Flt3", "Ifitm1", "Lmo4", "Elane", "Prtn3", "Mpo", "Cebpe", "Csf1r", "Cebpa", "Lgals1"],
     "DC": ["Irf8", "Id2", "Cd74", "H2-Aa"],
     "Lymphoid": ["Gzmb", "Tcb", "Ccl5"], 
-    "other_variables": ["log10_total_counts", "phase", "perturbation", "Batch_desc", "cell_type", "timepoint"],
+    "other_variables": ["log10_total_counts", "phase", "perturbation", "Batch_desc", "cell_type", "timepoint", "dpt_pseudotime"],
 }
 
 for cell_type, genes in markers.items():
@@ -244,12 +215,28 @@ for cell_type, genes in markers.items():
     else:
         print(f"No marker genes found for {cell_type} in the dataset.")
 
-# %%
 plt.figure()
 summary_plot = sc.pl.draw_graph(adata_merged, color="Batch_desc", use_raw=False, show=False)
 summary_plot.figure.savefig('../not_ready/paul/paul_summary.svg', bbox_inches='tight')
+adata_merged.obs["summary"] = "timeseries"
+is_knockout_or_matched_control = adata_merged.obs["Batch_desc"].str.contains("Cebp")
+adata_merged.obs.loc[is_knockout_or_matched_control, "summary"] = adata_merged.obs.loc[is_knockout_or_matched_control, "Batch_desc"]
+print(adata_merged.obs["summary"].value_counts())
+summary_plot = sc.pl.draw_graph(
+    adata_merged, 
+    color="summary", 
+    palette = {
+        "timeseries": "#008000",  # green
+        "Cebpa KO": "#FFA500",    # orange
+        "Cebpa control": "#0000FF",  # blue
+        "Cebpe KO": "#FFC0CB",    # pink
+        "Cebpe control": "#800080",  # purple
+    },
+    use_raw=False, 
+    show=False
+)
+summary_plot.figure.savefig('../not_ready/paul/paul_summary_simple.svg', bbox_inches='tight')
 
-# %%
 # Make cluster anottation dictionary - CHANGE based on observations
 annotation_filtered = {
     "MEP":[17, 2, 14],
@@ -270,35 +257,124 @@ for cell_type, clusters in annotation_filtered.items():
         
 annotation_filtered_rev
 
-# %%
 adata_merged.obs["cell_type"] = [annotation_filtered_rev.get(i, 'NaN') for i in adata_merged.obs.louvain]
 
-# Define the timepoint mapping based on research about the order of the cell types
-timepoint_mapping = {
-    "MEP": 0,
-    "GMP": 0,
-    "late_GMP": 1,
-    "Monocytes": 2,
-    "Erythroids": 1,
-    "Megakaryocytes": 1,
-    "Granulocytes": 2,
-    "DC": 2,
-}
+# pseudotime inference
+adata_train = adata_merged[adata_merged.obs['summary'] == 'timeseries', :].copy()
 
-# Create the timepoint column based on the cell_type column
-adata_merged.obs['timepoint'] = adata_merged.obs['cell_type'].map(timepoint_mapping).astype('category')
+adata_train.uns['iroot'] = np.flatnonzero(adata_train.obs['cell_type'].isin({'MEP', 'GMP'}))[0]
+sc.tl.dpt(adata_train, n_dcs=5)
+adata_train = adata_train[np.isfinite(adata_train.obs["dpt_pseudotime"]), :].copy()
+projector = KNeighborsRegressor(n_neighbors=10).fit(y = adata_train.obs['dpt_pseudotime'], X = adata_train.obsm['X_pca'])
+adata_merged.obs['dpt_pseudotime'] = projector.predict(adata_merged.obsm['X_pca'])
+del adata_train
 
-# Display the unique values in the 'cell_type' and 'timepoint' columns to ensure labels are correctly assigned
-print(adata_merged.obs[['cell_type', 'timepoint']].drop_duplicates())
+summary_plot = sc.pl.draw_graph(
+    adata_merged, 
+    color="dpt_pseudotime", 
+    use_raw=False, 
+    show=False
+)
+summary_plot.figure.savefig('../not_ready/paul/paul_dpt.svg', bbox_inches='tight')
+
+
+def max_to_1_but_min_the_same(x):
+    return x.min() + (1-x.min())*(rank(x)/rank(x).max())
+
+terminal_states = [
+    "Monocytes", "Erythroids", "Megakaryocytes", "Granulocytes", "DC"
+]
+for ct in terminal_states:
+    is_in_ct = adata_merged.obs["cell_type"] == ct
+    adata_merged.obs.loc[is_in_ct, "dpt_pseudotime"] = max_to_1_but_min_the_same(adata_merged.obs.loc[is_in_ct, "dpt_pseudotime"])
+    
+summary_plot = sc.pl.draw_graph(
+    adata_merged, 
+    color="dpt_pseudotime", 
+    use_raw=False, 
+    show=False
+)
+summary_plot.figure.savefig('../not_ready/paul/paul_dpt_rescaled.svg', bbox_inches='tight')
+
+# We are in an awkward situation where downstream code expects known discrete time labels, not pseudotemporal ordering of a single-timepoint measurement of an asynchronous process.
+# Therefore, discretize pseudotime.
+adata_merged.obs['timepoint'] = [int(t) for t in (adata_merged.obs['dpt_pseudotime']/5).round(1)*10]
+summary_plot = sc.pl.draw_graph(
+    adata_merged,
+    color="timepoint", 
+    use_raw=False, 
+    show=False
+)
+summary_plot.figure.savefig('../not_ready/paul/timepoint.svg', bbox_inches='tight')
+
+
+# Does this play nicely with GGRN's OT matching scheme?
+# Downstream code in GGRN can use this by setting matching_method="optimal_transport".
+matched = ggrn.match_timeseries(adata_merged[adata_merged.obs['summary']=='timeseries', :], 
+                                matching_method="optimal_transport", 
+                                matched_control_is_integer=False, 
+                                do_look_backwards = True)
+has_matched = matched.obs["matched_control"].notnull()
+matched.obs["matched_past_celltype"] = ""
+matched.obs.loc[has_matched, "matched_past_celltype"] = matched.obs.loc[matched.obs.loc[has_matched, "matched_control"], "cell_type"].values
+# Result is ok but still contains some unexpected lineage relationships.
+print("Preview of optimal transport-based matching:")
+print(matched[matched.obs["matched_past_celltype"]!=matched.obs["cell_type"], :].obs.value_counts(["matched_past_celltype", "cell_type"]))
+
+# A more customized solution based on nearest neighbors and pseudotime.
+# Downstream code in GGRN can use this by setting matching_method="user".
+def do_pseudotime_matching(adata):
+    adata.obs["matched_control"] = np.nan
+    def pick_lowest_pseudotime(indices):
+        return indices[np.argmin(adata.obs["dpt_pseudotime"].iloc[indices])]
+    for i, cellname in enumerate(adata.obs_names):
+        try:
+            adata.obs.loc[cellname, "matched_control"] = adata.obs_names[pick_lowest_pseudotime(adata.obsp["connectivities"][i,:].nonzero()[1])]
+        except ValueError: #no neighbors
+            pass
+    return adata
+
+matched = do_pseudotime_matching(adata_merged[adata_merged.obs['summary']=='timeseries', :])
+has_matched = matched.obs.index[matched.obs["matched_control"].notnull()].values
+matched.obs["matched_past_celltype"] = ""
+matched.obs.loc[has_matched, "matched_past_celltype"] = matched.obs.loc[matched.obs.loc[has_matched, "matched_control"], "cell_type"].values
+print("Preview of neighborhood+pseudotime-based matching:")
+print(matched[matched.obs["matched_past_celltype"]!=matched.obs["cell_type"], :].obs.value_counts(["matched_past_celltype", "cell_type"]))
+
+# Final choice: the pseudotime matching is more in line with what we know about the data.
+adata_merged.obs["matched_control"] = np.nan
+adata_merged.obs.loc[has_matched, "matched_control"] = matched.obs.loc[has_matched, "matched_control"]
+
+# Save the matched embeddings for visualization using the same R code from the evals
+embeddings = pd.DataFrame(adata_merged.obsm["X_draw_graph_fa"], index = adata_merged.obs_names)
+adata_merged.obs[["train_viz1", "train_viz2"]] = embeddings
+adata_merged.obs[["progenitor_viz1", "progenitor_viz2"]] = np.nan
+adata_merged.obs.loc[has_matched, ["progenitor_viz1", "progenitor_viz2"]] = embeddings.loc[adata_merged.obs.loc[has_matched, "matched_control"], :].values
+adata_merged.obs[["matched_control", "cell_type", "timepoint", 
+                  "train_viz1", "train_viz2", "progenitor_viz1", "progenitor_viz2"]].to_csv("../not_ready/paul/paul_matching_sanity_check.csv")
+
 
 # Visualize results
-sc.pl.draw_graph(adata_merged, color='cell_type', legend_loc='on data')
+celltype_plot = sc.pl.draw_graph(
+    adata_merged, 
+    color='cell_type', 
+    palette = {
+        "MEP": "#800080",          # purple
+        "GMP": "#000000",          # black
+        "late_GMP": "#A52A2A",     # brown
+        "Monocytes": "#FFA500",    # orange
+        "Erythroids": "#FF0000",   # red
+        "DC": "#FFFF00",           # yellow
+        "Megakaryocytes": "#0000FF", # blue
+        "Granulocytes": "#008000", # green    
+    }, 
+    use_raw=False, 
+    show=False,
+)
+celltype_plot.figure.savefig('../not_ready/paul/paul_cell_type.svg', bbox_inches='tight')
 
-
-# %% [markdown]
 # Split and save the data into train (which contains the wildtype data) and test (which contains the perturbation data and paired controls).
 
-# %%
 # Create train and test anndata objects
 # Filter the data based on Batch_desc
 train_adata = adata_merged[~adata_merged.obs['Batch_desc'].str.contains('control|KO', na=False)].copy()
@@ -330,10 +406,8 @@ test2.uns['perturbed_and_measured_genes'] = ["Cebpe"]
 test2.write_h5ad('../perturbations/paul2/test.h5ad')
 
 
-# %% [markdown]
 # Finally, ensure that the dataset passes all the required checks in the data checker.
 
-# %%
 # Set the path to the dataset
 dc.set_data_path("../perturbations")
 
