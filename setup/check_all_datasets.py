@@ -1,4 +1,3 @@
-import os
 import pereggrn_perturbations
 pereggrn_perturbations.set_data_path("../perturbations")
 for dataset_name in pereggrn_perturbations.load_perturbation_metadata().query("is_ready=='yes'")["name"][::-1]:
