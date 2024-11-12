@@ -7,16 +7,13 @@
 # 
 import warnings
 warnings.filterwarnings('ignore')
-import gc
+import anndata
 import importlib
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 import scanpy as sc
-import anndata 
 import os
-import altair as alt
-from collections import Counter
+import numpy as np
+from scipy.sparse import csr_matrix
+import pandas as pd
 
 # local
 import importlib
@@ -29,7 +26,12 @@ importlib.reload(ingestion)
 expression_quantified = {}
 expression_quantified["train"] = sc.read_h5ad(os.path.join("../perturbations/saunders", "train.h5ad"))
 expression_quantified["test"]  = sc.read_h5ad(os.path.join("../perturbations/saunders", "test.h5ad"))
-vars_to_show = ["embryo", "timepoint", "perturbation", "cell_type", "cell_type_broad", "cell_type_sub", "cell_count", 'total_counts', 'log1p_total_counts']
+perturbation_controls = expression_quantified["test"].obs["is_control"] 
+expression_quantified["test"].obs.loc[perturbation_controls, "summary"] = "control"
+expression_quantified["test"].obs.loc[~perturbation_controls, "summary"] = "perturbation"
+expression_quantified["train"].obs["summary"] = "timeseries"
+
+vars_to_show = ["embryo", "timepoint", "perturbation", "cell_type", "cell_type_broad", "cell_type_sub", "cell_count", 'total_counts', 'log1p_total_counts',  "summary"]
 for t in ["train", "test"]:
     expression_quantified[t].obs[
         ["timepoint", "cell_type_broad", "cell_type", "cell_type_sub"]
@@ -50,9 +52,27 @@ subsets = {
 
 for subset_name, cell_types in subsets.items():
     print(subset_name)
-    for t in ["train", "test"]:
+    for t in ["train", "test", "both"]:
         print(t)
-        subset = expression_quantified[t][expression_quantified[t].obs["cell_type"].isin(cell_types), :]
+        if t=="both":
+            obs1 = expression_quantified["train"][expression_quantified["train"].obs["cell_type"].isin(cell_types), :].obs.copy()
+            obs2 = expression_quantified["test"][expression_quantified["test"].obs["cell_type"].isin(cell_types), :].obs.copy()
+            X = csr_matrix(np.concatenate([
+                    expression_quantified["train"][expression_quantified["train"].obs["cell_type"].isin(cell_types), :].X.toarray(),
+                    expression_quantified["test"][expression_quantified["test"].obs["cell_type"].isin(cell_types), :].X.toarray(),
+                ]))
+            subset = anndata.AnnData(
+                X = X,
+                var = expression_quantified["train"].var,
+                obs = pd.concat(
+                    [obs1, obs2],
+                    axis=0, 
+                    ignore_index=True
+                )
+            )
+            del X
+        else:
+            subset = expression_quantified[t][expression_quantified[t].obs["cell_type"].isin(cell_types), :]
         if t=="train":
             sc.pp.highly_variable_genes(subset, n_bins=50, n_top_genes = subset.var.shape[0], flavor = "seurat_v3" )
         else:
