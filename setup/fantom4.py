@@ -191,6 +191,7 @@ for k in ("train", "test"):
     plt.figure()
     fig = sns.scatterplot(x=x,y=y)
     plt.title("Mean-variance relationship after quantile transformation + natural log")
+    os.makedirs(f"../perturbations/fantom4/{k}/", exist_ok = True)
     fig.figure.savefig(f"../perturbations/fantom4/{k}/transformed_mean_var.pdf", bbox_inches='tight')
 
 # Study perturbation effects
@@ -228,12 +229,14 @@ expression_quantified["test"].obs[ "pearsonCorr"] = correlations[1]
 
 # Some basic exploration of results
 print("Data exploration")
-expression_quantified["both_uncorrected"] = anndata.concat(expression_quantified)
-expression_quantified["both_uncorrected"].uns["perturbed_and_measured_genes"]      = expression_quantified["test"].uns["perturbed_and_measured_genes"]  
-expression_quantified["both_uncorrected"].uns["perturbed_but_not_measured_genes"]  = expression_quantified["test"].uns["perturbed_but_not_measured_genes"] 
-expression_quantified["both_uncorrected"].uns["perturbations_overlap"]             = expression_quantified["test"].uns["perturbations_overlap"] 
+expression_quantified["both"] = anndata.concat(expression_quantified)
+expression_quantified["both"].uns["perturbed_and_measured_genes"]      = expression_quantified["test"].uns["perturbed_and_measured_genes"]  
+expression_quantified["both"].uns["perturbed_but_not_measured_genes"]  = expression_quantified["test"].uns["perturbed_but_not_measured_genes"] 
+expression_quantified["both"].uns["perturbations_overlap"]             = expression_quantified["test"].uns["perturbations_overlap"] 
+expression_quantified["both"].obs["summary"] = [["Knockdown", "Control"][i] for i in expression_quantified["both"].obs["is_control_int"].astype(int)]
+expression_quantified["both"].obs.loc[expression_quantified["both"].obs.index.isin(expression_quantified["train"].obs.index), "summary"] = "timeseries"
 
-for t in ("train", "test", "both_uncorrected"):
+for t in ("train", "test", "both"):
     print(f"Exploring {t}")
     sc.pp.highly_variable_genes(expression_quantified[t], flavor = "seurat_v3", n_top_genes=expression_quantified[t].shape[1])
     with warnings.catch_warnings():
@@ -247,21 +250,9 @@ for t in ("train", "test", "both_uncorrected"):
 # Training data: time-point 0 has mean 0
 # Test data: each cluster has mean 0
 # 
-expression_quantified[f"train_uncorrected"] = expression_quantified["train"].copy()
 expression_quantified[ f"test_uncorrected"] = expression_quantified[ "test"].copy()
 sc.pp.regress_out(expression_quantified["test"], "louvain")
-for g in expression_quantified["train"].var.index:
-    mean_t0 = expression_quantified["train"][expression_quantified["train"].obs["timepoint"]==0,g].X.mean()
-    v = expression_quantified["train"][:,g].X - mean_t0
-    v = v / (0.00001 + np.sqrt(np.var(v)))
-    assert all(pd.notnull(v)), g
-    expression_quantified["train"][:,g].X = v
-expression_quantified["both"] = anndata.concat([expression_quantified["train"], expression_quantified["test"]])
-expression_quantified["both"].uns["perturbed_and_measured_genes"]      = expression_quantified["test"].uns["perturbed_and_measured_genes"]  
-expression_quantified["both"].uns["perturbed_but_not_measured_genes"]  = expression_quantified["test"].uns["perturbed_but_not_measured_genes"] 
-expression_quantified["both"].uns["perturbations_overlap"]             = expression_quantified["test"].uns["perturbations_overlap"] 
-
-for t in ("train", "test", "both"):
+for t in ["test"]:
     print(f"After correction, exploring {t}")
     with warnings.catch_warnings():
         sc.tl.pca(expression_quantified[t], n_comps=10)
@@ -269,12 +260,12 @@ for t in ("train", "test", "both"):
     sc.tl.louvain(expression_quantified[t])
     sc.tl.umap(expression_quantified[t])
 
-for t in ("train", "test", "both", "test_uncorrected", "train_uncorrected", "both_uncorrected"):
+for t in ("train", "test", "both", "test_uncorrected"):
     print(f"Plotting {t}")
-    vars_to_show = ["timepoint", "perturbation", "louvain", "sample", "lot", "is_control_int"]
+    vars_to_show = ["timepoint", "perturbation", "louvain", "sample", "lot", "is_control_int", "summary"]
     for v in vars_to_show:
-        fig = sc.pl.umap(expression_quantified[t], color = v, show = False, legend_loc='on data')
         try:
+            fig = sc.pl.umap(expression_quantified[t], color = v, show = False, legend_loc='on data')
             os.makedirs(f"../perturbations/fantom4/{t}", exist_ok=True)
             fig.figure.savefig(f"../perturbations/fantom4/{t}/{v}.pdf", bbox_inches='tight')
         except Exception as e:
