@@ -7,8 +7,12 @@
     - [KnockTF data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6943067/) as used by [Dictys](https://www.biorxiv.org/content/10.1101/2022.09.14.508036v1.full.pdf)
     - Treutlein group brain organoids [here](https://www.nature.com/articles/s41586-022-05279-8) and [here](https://www.nature.com/articles/s41586-023-06473-y)
     - BMDC timeseries https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5876141/ plus Dixit BMDC perturb-seq or [Parnas 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4522370/), which also has a genome-wide CRISPR screen
-    - Endoderm differentiation screen https://pubmed.ncbi.nlm.nih.gov/31110351/
-- other:
+    - Genome-wide CRISRPR screens of THP-1 activation or A549 activation would be useful.
+    - Mouse embryo knockout atlases https://www.nature.com/articles/s41586-023-06548-w
+- other:  
+    - Perturb-multiome https://www.biorxiv.org/content/10.1101/2024.09.09.611392v1
+    - Marson lab CD8: https://www.science.org/doi/10.1126/science.abj4008
+    - sunshine et al covid19 screen https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10558542/
     - Tian et al neurons https://www.nature.com/articles/s41593-021-00862-0
     - Southard TF-ome CRISPRa: https://biorxiv.org/content/10.1101/2024.07.31.606073v1
     - Bock T-cell datasets (available in sc-perturb collection)
@@ -22,8 +26,6 @@
     - Pluripotency screen https://www.biorxiv.org/content/10.1101/2023.08.23.554254v1
     - CD8 T and neural progenitors https://www.nature.com/articles/s41592-023-02017-4
     - in vivo perturb-seq https://www.biorxiv.org/content/10.1101/2023.09.18.558077v1, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10542124/
-    - 2016 K562 perturb-seq data: is it consistent with big modern K562 perturb-seq?
-    - List here may be useful: https://www.sciencedirect.com/science/article/pii/S2405471221002027
     - IPS-derived neurons: https://www.sciencedirect.com/science/article/pii/S0896627319306403?via%3Dihub
     - yeast https://www.cell.com/cell/fulltext/S0092-8674(14)00342-0?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0092867414003420%3Fshowall%3Dtrue
 
