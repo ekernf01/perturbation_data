@@ -32,7 +32,7 @@ expression_quantified["test"].obs.loc[~perturbation_controls, "summary"] = "pert
 expression_quantified["train"].obs["summary"] = "timeseries"
 
 vars_to_show = ["embryo", "timepoint", "perturbation", "cell_type", "cell_type_broad", "cell_type_sub", "cell_count", 'total_counts', 'log1p_total_counts',  "summary"]
-for t in ["train", "test"]:
+for t in ["test", "train"]:
     expression_quantified[t].obs[
         ["timepoint", "cell_type_broad", "cell_type", "cell_type_sub"]
     ].value_counts(
@@ -52,7 +52,7 @@ subsets = {
 
 for subset_name, cell_types in subsets.items():
     print(subset_name)
-    for t in ["train", "test", "both"]:
+    for t in ["test", "train", "both"]:
         print(t)
         if t=="both":
             obs1 = expression_quantified["train"][expression_quantified["train"].obs["cell_type"].isin(cell_types), :].obs.copy()
@@ -73,10 +73,23 @@ for subset_name, cell_types in subsets.items():
             del X
         else:
             subset = expression_quantified[t][expression_quantified[t].obs["cell_type"].isin(cell_types), :]
-        if t=="train":
+        # To ensure the perturbed genes are included, we compute highley expressed and highyl variable genes on the test data.
+        # Since the test data include multiple timepoints and cell types, these HVG's should reflect similar variation to what we would get from the train data.
+        # Remove low-expressed genes, basing both train and test gene selection on only the test data
+        if t=="test":
+            expressed_genes = subset.var.index[sc.pp.filter_genes(subset.copy(), min_cells=25, inplace=False)[0]]
+            subset = subset[:,expressed_genes]
+            perturbed_genes = set(subset.uns["perturbed_but_not_measured_genes"]).union(set(subset.uns["perturbed_and_measured_genes"]))
+            subset.uns["perturbed_and_measured_genes"    ] = list(perturbed_genes.intersection(subset.var_names))
+            subset.uns["perturbed_but_not_measured_genes"] = list(perturbed_genes.difference(subset.var_names))
+        else:
+            subset = subset[:, expressed_genes]
+        # Detect highly variable genes, based on the test data
+        if t=="test":
             sc.pp.highly_variable_genes(subset, n_bins=50, n_top_genes = subset.var.shape[0], flavor = "seurat_v3" )
         else:
-            subset.var["highly_variable"] = [int(i) for i in previous_hvg.copy()]
+            subset.var["highly_variable_rank"] = [int(i) for i in previous_hvg.copy()]
+        
         sc.tl.pca(subset, svd_solver='arpack', n_comps=10)
         sc.pp.neighbors(subset, n_neighbors=4, n_pcs=10)
         sc.tl.umap(subset)
