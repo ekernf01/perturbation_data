@@ -14,6 +14,7 @@ import os
 from scipy.stats import rankdata as rank
 from sklearn.neighbors import KNeighborsRegressor
 import ggrn.api as ggrn
+import pereggrn_networks
 
 # Load the main dataframe
 df = pd.read_csv('../not_ready/paul/GSE72857_umitab.txt', sep='\t')
@@ -50,6 +51,15 @@ merged_gene_columns = [col for col in merged_df.select_dtypes(include=[np.number
 merged_numeric_data = merged_df[merged_gene_columns]
 merged_gene_names = merged_numeric_data.columns.values
 merged_cell_names = merged_numeric_data.index.values
+
+# Resolve genes with multiple names in a way that is compatible with the CellOracle network wherever possible
+pereggrn_networks.set_grn_location("../../network_collection/networks")
+network_gene_names = set(pereggrn_networks.load_grn_all_subnetworks("celloracle_mouse_atac_atlas")["target"].unique())
+for gi,g in enumerate(merged_gene_names):
+    new_name = ";".join([alias for alias in g.split(";") if alias in network_gene_names])
+    if new_name == "":
+        new_name = g
+    merged_gene_names[gi] = new_name
 
 # Create AnnData object
 adata_merged = sc.AnnData(X=merged_numeric_data.values.astype(float))
@@ -142,9 +152,6 @@ sc.tl.paga(adata_merged, groups='louvain')
 plt.rcParams["figure.figsize"] = [6, 4.5]
 sc.pl.paga(adata_merged, show=False)
 sc.tl.draw_graph(adata_merged, init_pos='paga', random_state=123)
-
-# Rank genes based on the high variability information provided by Scanpy
-adata_merged.var['highly_variable_rank'] = np.argsort(~adata_merged.var['highly_variable'].values)
 
 # Is control: Infer from 'Batch_desc'
 adata_merged.obs['is_control'] = adata_merged.obs['Batch_desc'].apply(lambda x: False if 'KO' in str(x) else True)
