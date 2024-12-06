@@ -1,0 +1,58 @@
+### Full reference list for screen results with known roles in CD14 regulation or monocyte-to-macrophage differentiation
+
+Anastassiadis, T., et al. (2011). "Comprehensive assay of kinase catalytic activity reveals features of kinase inhibitor selectivity." Nature biotechnology 29(11): 1039.
+	
+Axten, J. M., et al. (2013). "Discovery of GSK2656157: an optimized PERK inhibitor selected for preclinical development." ACS medicinal chemistry letters 4(10): 964-968.
+	
+Baek, Y.-S., et al. (2009). "Identification of novel transcriptional regulators involved in macrophage differentiation and activation in U937 cells." BMC immunology 10(1): 18.
+	
+Bouhlel, M. A., et al. (2007). "PPARγ activation primes human monocytes into alternative M2 macrophages with anti-inflammatory properties." Cell metabolism 6(2): 137-143.
+	
+Chang, C.-P., et al. (2013). "Targeting NFKB by autophagy to polarize hepatoma-associated macrophage differentiation." Autophagy 9(4): 619-621.
+	
+Chen, M.-T., et al. (2015). "ZFP36L1 promotes monocyte/macrophage differentiation by repressing CDK6." Scientific reports 5: 16229.
+	
+Daigle, S. R., et al. (2011). "Selective killing of mixed lineage leukemia cells by a potent small-molecule DOT1L inhibitor." Cancer cell 20(1): 53-65.
+	
+Dong, Q., et al. (2011). "Discovery of TAK-733, a potent and selective MEK allosteric site inhibitor for the treatment of cancer." Bioorganic & medicinal chemistry letters 21(5): 1315-1319.
+	
+Fagone, P., et al. (2012). "Modulation of heat shock proteins during macrophage differentiation." Inflammation Research 61(10): 1131-1139.
+	
+Ferrero, E. and S. M. Goyert (1988). "Nucleotide sequence of the gene encoding the monocyte differentiation antigen, CD14." Nucleic acids research 16(9): 4173.
+	
+Foldi, J., et al. (2016). "RBP-J is required for M2 macrophage polarization in response to chitin and mediates expression of a subset of M2 genes." Protein & cell 7(3): 201-209.
+	
+Graffmann, N., et al. (2015). "Age-related increase of EED expression in early hematopoietic progenitor cells is associated with global increase of the histone modification H3K27me3." Stem cells and development 24(17): 2018-2031.
+	
+Gualberto, A., et al. (1998). "p53 transactivation of the HIV-1 long terminal repeat is blocked by PD 144795, a calcineurin-inhibitor with anti-HIV properties." Journal of Biological Chemistry 273(12): 7088-7093.
+	
+Günthner, R. and H.-J. Anders (2013). "Interferon-regulatory factors determine macrophage phenotype polarization." Mediators of inflammation 2013.
+	
+Han, J., et al. (1994). "A MAP kinase targeted by endotoxin and hyperosmolarity in mammalian cells." Science 265(5173): 808-811.
+	
+Herzig, J. K., et al. (2017). "Protein phosphatase 4 regulatory subunit 2 (PPP4R2) is recurrently deleted in acute myeloid leukemia and required for efficient DNA double strand break repair." Oncotarget 8(56): 95038.
+	
+Ishiguro, A., et al. (1996). "Id2 expression increases with differentiation of human myeloid cells." Blood 87(12): 5225-5231.
+	
+Klemsz, M., et al. (1993). "Characterization of the ets oncogene family member, fli-1." Journal of Biological Chemistry 268(8): 5769-5773.
+	
+Lu, X., et al. (2019). "MTA2/NuRD regulates B cell development and cooperates with OCA-B in controlling the Pre-B to immature B cell transition." Cell Reports 28(2): 472-485. e475.
+	
+Moris, N., et al. (2018). "Histone Acetyltransferase KAT2A Stabilizes Pluripotency with Control of Transcriptional Heterogeneity." Stem Cells 36(12): 1828-1838.
+	
+Peirce, M. J., et al. (2010). "Themis2/ICB1 is a signaling scaffold that selectively regulates macrophage Toll-like receptor signaling and cytokine production." PloS one 5(7): e11465.
+	
+Robarge, K., et al. (2014). Abstract DDT02-03: Discovery of GDC-0994, a potent and selective ERK1/2 inhibitor in early clinical development, AACR.
+	
+Sander, J., et al. (2017). "Cellular differentiation of human monocytes is regulated by time-dependent interleukin-4 signaling and the transcriptional regulator NCOR2." Immunity 47(6): 1051-1066. e1012.
+	
+Schulthess, J., et al. (2019). "The short chain fatty acid butyrate imprints an antimicrobial program in macrophages." Immunity 50(2): 432-445. e437.
+	
+Stavenger, R. A., et al. (2007). "Discovery of aminofurazan-azabenzimidazoles as inhibitors of Rho-kinase with high kinase selectivity and antihypertensive activity." Journal of medicinal chemistry 50(1): 2-5.
+	
+Su, R., et al. (2015). "MiR-181 family: regulators of myeloid differentiation and acute myeloid leukemia as well as potential therapeutic targets." Oncogene 34(25): 3226.
+	
+Zaidi, S. K., et al. (2009). "Altered Runx1 subnuclear targeting enhances myeloid cell proliferation and blocks differentiation by activating a miR-24/MKP-7/MAPK network." Cancer research 69(21): 8249-8255.
+	
+Zhao, L., et al. (2014). "The MYB proto-oncogene suppresses monocytic differentiation of acute myeloid leukemia cells via transcriptional activation of its target gene GFI1." Oncogene 33(35): 4442.
+	
