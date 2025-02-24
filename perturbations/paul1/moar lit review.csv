@@ -1,0 +1,149 @@
+perturbation,Reference (Pubmed ID),Annotation_summary,effect_direction,notes,Annotation_1,Annotation_2,Annotation_3,,Included in CellOracle lit review?,CO categorization,CO references
+Aff3,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Ahrr,PMID28930664,no known effect,none,The Ahr repressed by this gene controls macrophage vs DC fate choice.,NA,NA,NA,NA,no,Not reviewed,
+Arid3b,PMID27537840,no known effect,none,"Article was retracted, but claimed no effect on myeloid differentiation. ",NA,NA,NA,NA,no,Not reviewed,
+Bcl11b,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Bcl6,PMID34135058 PMID37607223 PMID38688934,GM and DC,LoF inhibits lineage,"Essential for DC development in vitro, but not in vivo. Required for development of some types of monocyte. ",NA,NA,NA,NA,no,Not reviewed,
+Bhlhe41,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Cdx1,PMID22901255,no known effect,none,"Essential for blood development and some other cell types, but myeloid role(s) not known.",NA,NA,NA,NA,no,Not reviewed,
+Dach1,PMID22405764 PMID33077975,Stemness,none,"Promotes myeloid over lymphoid fate and regulates cell cycle genes, but no known role in DC, GM, or ME fate choices.",NA,NA,NA,NA,no,Not reviewed,
+Egr3,PMID17312150,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Foxo6,PMID23420833,no known effect,none,Search turned up GM effects of a different set of FoxO factors.,NA,NA,NA,NA,no,Not reviewed,
+Foxp2,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Foxs1,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Gata6,PMID38676923,GM,GoF promotes lineage,"Not ordinarily expressed, yet overexpression has large effects",NA,NA,NA,NA,no,Not reviewed,
+Gbx2,PMID9346236,GM,GoF promotes lineage,Mechanism is likely via downstream autocrine signaling,NA,NA,NA,NA,no,Not reviewed,
+Gli2,PMID25745035 PMID22461491,Stemness,LoF inhibits lineage,"In myelocytic leukemia, Gli2 LoF increases apoptosis. Related morphogen DHH controls erythropoiesis.",NA,NA,NA,NA,no,Not reviewed,
+Gli3,PMID22461491,no known effect,none,Related morphogen DHH controls erythropoiesis.,NA,NA,NA,NA,no,Not reviewed,
+Hmgb2,PMID19965638,ME,LoF inhibits lineage,"Regulates GFI1B. When depleted via shRNA, causes fewer and smaller colonies in an erythroid or megakaryocyte diff protocol.",NA,NA,NA,NA,no,Not reviewed,
+Hoxa1,https://doi.org/10.1182/blood.V114.22.3654.3654 https://doi.org/10.1182/blood.V118.21.2423.2423,ME,LoF inhibits lineage,There are two isoforms and this claim regards the shorter isoform.,NA,NA,NA,NA,no,Not reviewed,
+Hoxa2,PMID20130239,no known effect,none,HOXA2 is one of two HoxA genes with no effect on hematopoeisis.,NA,NA,NA,NA,no,Not reviewed,
+Id3,PMID27128622 PMID9525934 PMID39716491,ME,LoF inhibits lineage,Partially redundant with Id1; conditional double KO in blood is anemic. Ectopic expression,NA,NA,NA,NA,no,Not reviewed,
+Id2,PMID15701714,GM,LoF inhibits lineage,LoF blocks terminal differentiation of multiple granulocyte lineages and GoF in K562 or primary CD34+ cells promotes erythroid differentiation.,,,,,yes,Not reviewed,
+Irx5,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Lin28b,PMID38847604 PMID27401346 PMID25655194,GM & ME,LoF promotes GM lineage,There are also many papers on Lin28b in leukemia.,NA,NA,NA,NA,no,Not reviewed,
+Lrrfip1,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Mlxipl,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Nme2,PMID19381783 PMID12848338 PMID12135660,ME,LoF inhibits lineage,Nme1 and Nme2 double KO mice are anemic. Mode of regulation is unclearcould be transcriptional or something else. Single KO Nme1 mice are not anemic.,NA,NA,NA,NA,no,Not reviewed,
+Nr2e1,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Olig2,PMID27154355 PMID28760688,GM,LoF inhibits lineage,"The effect is specific to eosinophils, but myeloid-derived cancers respond to ectopic Olig2 expression.",NA,NA,NA,NA,no,Not reviewed,
+Rcor2,PMID24843136,ME,LoF inhibits lineage,Rcor1 and Rcor3 also have effects (but the direction is not consistent),NA,NA,NA,NA,no,Not reviewed,
+Rora,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Rorc,PMID26267530 PMID26267538,GM,LoF inhibits lineage,LoF blocks differentiation of myeloid-derived suppressor cells in favor of pro-inflammatory lineages.,NA,NA,NA,NA,no,Not reviewed,
+Setbp1,PMID22566606 PMID39104425 PMID23832012,GM & ME,LoF promotes ME lineage,Setbp1 is also very commonly mutated in leukemias.,NA,NA,NA,NA,no,Not reviewed,
+Ssrp1,PMID9566881 PMID35179289,GM & ME,LoF promotes GM lineage,,NA,NA,NA,NA,no,Not reviewed,
+Sub1,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Tbx4,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Thap3,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Tox2,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Zbtb20,PMID23776228,no known effect,none,This reference checked macrophage and DC numbers.,NA,NA,NA,NA,no,Not reviewed,
+Zbtb32,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Zfp366,PMID33811060 PMID37191947,DC,none,Effect seems to happen in DC’s of both myeloid and non-myeloid origin.,NA,NA,NA,NA,no,Not reviewed,
+Zfp385a,PMID11927637,ME,LoF inhibits lineage,Alternate name is Hzf.,NA,NA,NA,NA,no,Not reviewed,
+Zfp579,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Zfp580,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Zfp608,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Zfp941,none,no known effect,none,,NA,NA,NA,NA,no,Not reviewed,
+Zfpm1,PMID17207461,ME,LoF promotes lineage,,NA,NA,NA,NA,no,Not reviewed,
+Batf3,PMID31921109 PMID26054719  PMID19008445,DC,GoF promotes differentiation and LoF inhibits differentiation,,"DC differentiation phenotype was reported, but myeloid differentiation phenotype is unknown.",,,,yes,No known role,
+Mef2c,PMID18326819 PMID19211936,GM & ME,LoF inhibits lineage,"LoF inhibits megakaryocyte fate choice. Within the GM branch, GoF promotes monocyte fate over granulocyte fate. Lymphoid roles are also known, but neglected here.",Cell fate switch between myeloid and lymphoid,,,,yes,GM,"19221552, 18326819, 23435431"
+Irf1,PMID37889967 PMID37191947 PMID15385939 PMID18060035,GM & ME, LoF inhibits GM; GoF promotes ME,"LoF has effects on several distinct stages. GoF is in the context of a Gata1 KO rescue experiment, not a single-gene effect, and it affect megakaryocyte maturation. ",GMP,"Negative role in erythroid differentiation, GMP differentiation",,,yes,GM,"25185711, 9389691, 15385939"
+Cebpa,PMID9012825 PMID15589173 PMID15073037 PMID17088084 PMID25753223,GM,GoF promotes differentiation and LoF inhibits differentiation,LoF blocks differentiation of granulocytes and macrophages. Overexpression can reprogram committed T cell precursors into macrophages. ,GMP,Cell fate switch between MEP and GMP,,,yes,GM,18295580
+Elf1,PMID20525788,ME,GoF inhibits lineage,GoF blocks terminal differentiation of erythrocytes,Negative role in erythroid differentiation,PU.1 target gene,,,yes,GM,"20525788, 15767686"
+Nfic,PMID36572750,GM,GoF promotes differentiation,GoF is shockingly common in myeloid leukemia.,GMP,Mk differentiation,"Stemness, self-renewal",,yes,GM,"24041575, 25258084"
+Sfpi1,PMID9694804 PMID8079170 PMID15914556 PMID17934488 PMID15867096 PMID9687512 PMID20510871 PMID9716585,GM and DC,LoF inhibits lineage,"Aliases: Sfpi-1 and PU.1. Multiple papers on PU.1 LoF/GoF find varied phenotypes. With LoF, GM progenitors can be generated but are only able to proliferate and cannot differentiate. Low dosage may increase the amount of granulocytes. The number of mk-erythrocyte progenitors is either normal or increased. Multiple pathways of DC production are impaired. One of the refs is from 27 years ago and uses the term “myeloid” in a way that seems crucially inconsistent with its 2025 meaning, so I hesitate to interpret those results. There are also major lymphoid lineage effects, which we neglect here. Final ref is a review paper with a useful discussion. ",GMP,Cell fate switch between MEP and GMP,,,yes,GM,"18295580, 15621533"
+Irf8,PMID25749660 PMID8861914 PMID12133947 PMID22238324,GM and DC,LoF inhibits lineage,Irf8 is necessary for commitment to monocytic lineages and LoF yields neutrophils instead. Overexpression yields dendritic cells. Alias: ICSBP.,GMP,Monocyte differentiation,,,yes,GM,17259967
+Klf4,PMID18390749 PMID23319570 PMID17762869 ,GM,LoF inhibits lineage,LoF blocks monocyte differentiation in favor of granulocytes and GoF redirects GmP away from granulocytes to a monocyte fate. Overexpression partially rescues the IRF8 ko phenotype. ,GMP,Monocyte differentiation,,,yes,GM,17762869
+Nfkb1,PMID19380823 PMID20708837,GM,LoF inhibits lineage,Loss of granulocytes specifically; GMP not affected,GMP,Granulocyte,,,yes,GM,19380823
+Tcfec,"PMID19379700, PMID15908341",no known effect,none,We disagree with CellOracle review on this effect: these studies do not establish a lineage-specific effect on granulocyte or monocyte differentiation. Compare vector-only vs Tcfef in fig. 4A of PMID19379700.,"Macrophage, granulocyte","Stemness, self-renewal",,,yes,GM,"19379700, 15908341"
+Gfi1,PMID12530980 PMID12778173 PMID11810106 PMID33193732,GM,LoF inhibits lineage,Defect is specific to granulocytes. ,Granulocyte,,,,yes,GM,"20861919, 23226623, 18295580, 28401061"
+Cebpe,PMID9371821 PMID11243377 PMID19925846 PMID11861297,GM,LoF inhibits lineage,Granulocyte defects are well-studied and some authors also discuss a defect in macrophages.,GMP,Granulocyte,,,yes,GM,18295580
+Fos,PMID8423806 PMID3539224,GM,GoF promotes differentiation,Both studies are done in leukemia.,Granulocyte,Knockdown rescues neutrophil defects in other mutants,,,no,GM,26296889
+E2f4,PMID10983977 PMID10983976 PMID16861343 ,ME,LoF inhibits lineage,"Defect is in late-stage erythroid development, although this genes is highly pleiotropic.","Stemness, self-renewal, cell cycle","Erythroid differentiation, hematopoiesis cell cycle",,,yes,"GM & ME, stemness","16861343, 10983976"
+Gata2,PMID8078582 PMID19491391,no known effect,none,Defect is likely very early rather than lineage-specific. LoF has additional consequences in combination with Gata1 KO. ,"Stemness, self-renewal, cell cycle",MEP,,,yes,"GM & ME, stemness","18295580, 18295580"
+Myc,PMID21098095 PMID8798484 PMID1901940 PMID20940306 PMID19372257,GM & ME,Highly pleiotropic,"LoF yields fewer GMPs and erythrocytes and more megakaryocytes. GoF increases megakaryopoeisis, but blocks terminal differentiation and polyploidization in Mk. Also blocks terminal differentiation in erythrocytes. GoF in M1 leukemia cell line suppresses macrophage differentiation. ","Stemness, self-renewal, cell cycle","MEP, Mk, Erythroid fate",,,yes,"GM & ME, stemness","15545632, 19372257"
+Nfe2,PMID7774011 PMID25721735,ME,LoF inhibits lineage,Major effect on megakaryocytes and only a minor effect on erythroid overall state. Essential for globin expression.,"Stemness, self-renewal, cell cycle",MEP,,,yes,"GM & ME, stemness",28648895
+Fli1,,,,,Cell fate switch between Mk and Erythroid,"Monocyte, Granulocyte",,,yes,"GM & ME, stemness","18295580, 23320737, 15367440, 35412146"
+Zbtb7a,PMID19853566 PMID32115572,ME,LoF inhibits lineage,"Alias is LRF. Essential for erythroid differentiation, and GoF blocks myeloid differentiation. Refines Gata1’s effects later in erythroid differentiation by shutting off some genes. ",Erythroid differentiation,Differentiation in all lineages,,,yes,"GM & ME, stemness","19853566, 32525064"
+Stat3,PMID20581311,GM,LoF inhibits lineage,Necessary for emergency (infection-driven) production of granulocytes.,Granulocyte differentiation,"Stemness, self-renewal",,,yes,"GM & ME, stemness","23797472, 20581311"
+Nfe2l2,PMID23434824,no known effect,none,"Alias is NRF2, but there is actually another completely different gene called NRF2. Known role regulating HSC proliferation, which we neglect. See also NFE2.","Stemness, self-renewal, cell cycle",Relatively broad biological functions,,,yes,"GM & ME, stemness","23434824, 25721735"
+Myb,PMID2832742 PMID2461588 https://www.pnas.org/doi/10.1073/pnas.1805434115,unclear,unclear,"Defects in multiple lineages, including erythroid but not megakaryocyte. ","Stemness, self-renewal, cell cycle",Erythroid differentiation,,,yes,"GM & ME, stemness","29704633, 20686118"
+Etv6,PMID36543959,ME & DC,LoF inhibits lineage,,"Stemness, self-renewal, cell cycle",Erythroid differentiation,,,yes,"GM & ME, stemness","19302286, 15371326"
+Ybx1,,,,,"Stemness, self-renewal, cell cycle",Relatively broad biological functions,Mk differentiation,,yes,"GM & ME, stemness",21369783
+Chd2,,,,,"Stemness, self-renewal, cell cycle","Erythroid differentiation, Mk differentiation",,,yes,"GM & ME, stemness","31900031, 19137022"
+Cxxc1,,,,,"Stemness, self-renewal, cell cycle",Relatively broad biological functions,,,yes,"GM & ME, stemness",25470594
+Runx1,PMID26021490 PMID17290219 PMID28179276 PMID15784726 PMID15784726 PMID24189977 PMID31431533,GM & ME,Highly pleiotropic,"Aliases AML1 or CBFA2. Importance in early hematopoiesis complicates downstream phenotyping. GoF inhibits erythroid maturation, but rescues Mk diff of iPSC’s from a family affected with a platelet disorder. GM colony forming is increased.","Stemness, self-renewal, cell cycle",,,,yes,"GM & ME, stemness","18295580, 31431533, 18250229"
+Bcl11a,PMID34714913 PMID30182035 PMID35739577 DOI10.1182/blood.V104.11.385.385,ME,LoF inhibits lineage,"Represses PU.1, the Sfpi-1 gene product, and regulates globin switching and other eryhroid genes. Some sources claim LoF yields normal myeloid and erythroid development. Has large effects on HSC’s and lymphoid cells, which we neglect. ","Stemness, self-renewal, cell cycle",,,,yes,"GM & ME, stemness","27653684, 26387834"
+Nfia,PMID18056638 PMID16325577 PMID19542302 PMID20428206 PMID19542302,ME,LoF inhibits lineage and GoF promotes lineage,One paper found a monocyte-specific effect with no effect on granulocytes and another found a granulocyte-specific effect – both using NB4 cells. ,"Erythroid differentiation, granulocyte differentiation","Stemness, self-renewal",,,yes,"GM & ME, stemness","24041575, 19542302"
+Lmo2,PMID26764384 PMID37573405,ME,Essential for proliferation and survival of several AML lines. ,,"Stemness, self-renewal, cell cycle",Erythroid differentiation,,,yes,"GM & ME, stemness","18295580, 24041784"
+Foxp1,PMID15286807 PMID28232582 PMID18799727 PMID31077741,GM & DC,Highly pleiotropic,"GoF has effects on HSC’s and AML but for evidence of roles in myelopoeisis, we only found that GoF impairs monocyte differentiation and LoF impairs DC maturation. ","Stemness, self-renewal, cell cycle",,,,yes,"GM & ME, stemness",28232582
+Smarcc1,PMID18206867 PMID39088321,no known effect,none,Alias Baf155 or Srg3. SWI/SNF member. LoF is (doubly) embryonic lethal. Conditional LoF in embryonic hematopoiesis affects myeloid and erythroid differentiation. Effects on adult HSC derivatives are not known.,"Stemness, self-renewal",Chromatin remodeling,,,yes,"GM & ME, stemness","29596882, 33207205, 25789315"
+Nfya,PMID39192759 PMID39327506 PMID9885213 ,no known effect,none,"Review paper mentions importance in HSC self-renewal and connections to important genes such as Cebpe, but no direct evidence for necessity in myelopoeisis.","Stemness, self-renewal",,,,yes,"GM & ME, stemness",16081537
+Smarca5,PMID15965950 PMID25789315 PMID14617767,ME,LoF inhibits lineage,Smarca5 (alias Snf2h) is early-embryonic lethal but LoF in K562 indicates specific roles in erythropoiesis with no inhibition of GM lineage. Smarca4 has a known effect in granulocytes. ,Broad cell function,"ATPase, chromatin remodeling","Stemness, self-renewal",,yes,"GM & ME, stemness",28276606
+Cbx5,none,no known effect,none,,"Stemness, self-renewal",Chromatin remodeling,,,yes,"GM & ME, stemness",
+Nfatc3,none,no known effect,none,"Closely related to nfatc1,2,4",Cell cycle,"GMP differentiation, erythroid differentiation",,,yes,"GM & ME, stemness","22311511, 25100642, 29515759"
+Stat1,PMID18060035,ME,GoF promotes differentiation,Rescues Gata1 LoF,"Stemness, self-renewal",Erythroid differentiation,,,yes,"GM & ME, stemness","15213094, 23797472"
+Runx2,PMID24101375 PMID28179276 PMID27149837,DC,LoF inhibits lineage,Alias CBFA1. ,"Stemness, self-renewal",,,,yes,"GM & ME, stemness",19179305
+Smarcc2,PMID10535918,no known effect,none,"Alias BAF170. SWI/SNF member. LoF may affect myelopoiesis but direct evidence is confined to related genes, especially Smarcd2.",Chromatin remodeling,Granulocyte,,,yes,"GM & ME, stemness","25789315, 28369036"
+Ezh2,"DOI10.1182/blood.V126.23.4112.4112, PMID26219303 PMID26497210  PMID34115825",GM & ME,Highly pleiotropic,"Splenomegaly, monocytosis, and increase in platelet numbers. Megakaryocyte maturation defects. ",Chromatin remodeling,"Stemness, self-renewal",,,yes,"GM & ME, stemness","26497210, 26219303"
+Cux1,PMID29592892,GM & ME,Highly pleiotropic,"Defects in erythroid, platelet, and neutrophil lineages. LoF studies are tricky due to the gene being large and complex (33 exons). Effect is dosage-dependent. ","Stemness, self-renewal",,,,yes,"GM & ME, stemness",29592892
+Bptf,PMID18974875 PMID37987160 PMID29456179 ,no known effect,none,"KO is early-embryo lethal, so myelopoiesis cannot be observed. Transplants indicate a very early defect prior to the ME-GM split.",Chromatin remodeling,,,,yes,"GM & ME, stemness",29456179
+Rel,PMID33458695 PMID10518539 ,GM & ME,Highly pleiotropic,Double KO with RelA has a profound effect but single KO of Rel does not. Impaired erythropoiesis; impaired macrophage differentiation; granulocytosis; ,"Stemness, self-renewal",,,,yes,"GM & ME, stemness",10518539
+Irf2,PMID19818776 PMID14505489,ME,GoF promotes megakaryocyte differentiation,,"Stemness, self-renewal",,,,yes,"GM & ME, stemness",19483695
+Rara,PMID8394011 PMID9657762,GM,LoF inhibits lineage,Second reference discusses redundancy with Rarg: double KO is needed to observe the phenotype. Phenotype is granulocyte maturation.,"Stemness, self-renewal",,,,yes,"GM & ME, stemness",21364283
+Klf1,PMID21055716 PMID25585695 PMID7753195,ME,LoF inhibits lineage,Controls globin expression and other genes important for erythroid differentiation,MEP,Erythroid differentiation,,,yes,ME,"18295580, 23361909"
+Gata1,PMID18060035 PMID16127162 PMID7758949 PMID1987478 PMID14499119 PMID11012179 PMID1987478 PMID19491391,ME,LoF inhibits lineage and GoF promotes lineage,,MEP,Erythroid differentiation,,,yes,ME,"18295580, 15621534"
+Ets1,PMID: 20435626 PMID: 9264374,GM,LoF promotes GM lineage,"Also likely role in erythroid differentiation but most papers are on cancer, not normal development.",MEP,"Erythroid differentiation, Mk differentiation","Stemness, self-renewal",,yes,ME,"16294212, 23927967"
+Stat5a,PMID10428030  PMID31690038  PMID15353555,ME,LoF inhibits lineage and GoF promotes lineage,May be redundant with Stat5b,MEP,Erythroid differentiation,,,yes,ME,"18239084, 24498540"
+Gfi1b,PMID38548886 PMID33193732 PMID29326122,ME,LoF inhibits lineage,,MEP,Erythroid differentiation,,,yes,ME,"18295580, 28401061"
+Arhgef12,PMID31467124 DOI:10.1182/blood.V124.21.341.341,ME,LoF inhibits lineage,,MEP,Erythroid differentiation,,,yes,ME,31467124
+Hoxa7,PMID12952893 PMID15070702,ME,LoF inhibits lineage,,MEP,,,,yes,ME,23212154
+Hoxa5,PMID10397719 PMID10233891 PMID25590986,GM & ME,GoF inhibits erythroid differentiation; LoF inhibits GM fate choice and promotes erythroid fate.,,MEP,,,,yes,ME,23212154
+Nfatc2,PMID23446734 PMID22311511 PMID21750088,GM & ME & DC,Highly pleiotropic,"LoF in some papers is achieved via VIVIT peptide, a selective NFAT inhibitor.","Megakaryocyte, erythrocyte",,,,yes,ME,21750088
+Meis1,PMID14713950,ME,LoF inhibits lineage,KO mouse has no megakaryocytes; dies of hemorrhaging.,Silencing MEIS1 expression in progenitor cells induced a block in erythroid expansion and decreased megakaryocytic colony formation capacity.,,,,yes,ME,25107888
+Nfatc1,PMID23446734 PMID22311511 PMID29515759,GM & ME & DC,Highly pleiotropic,"LoF in some papers is achieved via VIVIT peptide, a selective NFAT inhibitor.","Megakaryocyte, erythrocyte",,,,no,ME,"23446734, 30150396, 29515759"
+Tbx21,PMID: 26607595,ME,LoF inhibits lineage,Alias is Tbet or T-bet. Megakaryocyte-specific role. We would have missed this paper in our search without the literature review from CellOracle.,Megakaryocyte,,,,no,ME,26607595
+Gata3,PMID11495703,ME,GoF promotes differentiation,"Role is not physiological: other GATA factors normally are expressed, but not GATA3. ","Megakaryocyte, erythrocyte",Overexpression blocks GM in favor of ME fates,,,no,ME,11495703
+Prdm16,PMID31270104,ME,GoF inhibits lineage,,"Megakaryocyte, erythrocyte",,,,no,ME,31270104
+Jun,PMID7947389 PMID8043518,GM,GoF promotes differentiation,,Erythroid differentiation and other functions,,,,no,ME,"15314183, 36104445"
+Herpud1,none,no known effect,none,,,,,,yes,No known role,
+Elk3,none,no known effect,none,,,,,,yes,No known role,
+Brf1,none,no known effect,none,,,,,,yes,No known role,
+Zbtb1,none,no known effect,none,Controls lymphoid vs myeloid fate but does not affect downstream lineages in myelopoiesis.,Gene role in myeloid differentiation is unknown,Lymphoid development,,,yes,No known role,22201126
+Irf9,none,no known effect,none,,,,,,yes,No known role,
+Itgb2,none,no known effect,none,,,,,,yes,No known role,
+Klf6,DOI10.1182/blood-2019-130800,GM & ME,LoF inhibits lineage,Block in terminal differentiation yields more cells but lower lineage marker expression.,,,,,yes,No known role,
+Zfp238,none,no known effect,none,Alias is Zbtb18.,,,,,yes,No known role,
+Id2,PMID18523151 PMID25051963,ME,GoF promotes differentiation,Erythroid-specific effect. Opposed by Gfi1. There Is an effect on DC’s but it’s thought to be in lymphoid-derived lineages. ,,,,,yes,No known role,
+Zbtb16,none,no known effect,none,,,,,,yes,No known role,
+Arid5a,none,no known effect,none,,,,,,yes,No known role,
+Sox4,PMID24183681 PMID27175269  PMID22627767,no known effect,none,"Sox4 opposes the action of Cebpa. LoF promotes self-renewal. But, no known effect on downstream fate decisions. ",,,,,yes,No known role,
+Bhlha15,https://doi.org/10.1101/2024.11.20.624578,DC,LoF inhibits lineage,LoF suppresses cDC1 differentiation.,,,,,yes,No known role,
+Klf2,none,no known effect,none,Important for monocyte activation but no known role in myelopoiesis. ,"Embryonic Erythroid precursor formation, but not adult hematopoiesis",,,,yes,No known role,"25150253, 17675555"
+Ikzf2,PMID30472158,no known effect,none,Important in AML but dispensable for myelopoiesis.,,,,,yes,No known role,
+Sp100,none,no known effect,none,,,,,,yes,No known role,
+Hlf,PMID29166614 PMID30796024,DC,GoF promotes differentiation,GoF promotes myeloid over lymphoid fate and cDC1 over cDC2,"LOF experiment showed phenotype in serial transplantation assay, but no effect on normal hematopoiesis.",,,,yes,No known role,29262330
+Phf21a,none,no known effect,none,,,,,,yes,No known role,
+Prdm5,PMID31119897,no known effect,none,Affects proliferation in AML,,,,,yes,No known role,
+Irf7,PMID11585813,GM,LoF inhibits lineage,Essential for monocyte differentiation into macrophages. ,,,,,yes,No known role,
+Zfhx3,none,no known effect,none,,,,,,yes,No known role,
+Hivep2,none,no known effect,none,,,,,,yes,No known role,
+Tcf7,none,no known effect,none,,,,,,yes,No known role,
+Sox13,PMID32579887 PMID37149693,no known effect,none,Suspected but not proven to drive neutrophil commitment. Sox13 ko partially rescues a leukemia model and increases macrophage output. ,"T-lymphocyte differentiation phenotype was reported, but myeloid differentiation phenotype is unknown.",,,,yes,No known role,17218525
+Pbx1,PMID23660001,ME,LoF inhibits lineage,Highly pleiotropic. LoF reduces the proportion of erythroid cells produced.  ,,,,,yes,No known role,
+Stat4,,,,,"Involved in immune response, but role is unknown in differentiation.",,,,yes,No known role,15888914
+Foxo1,,,,,"Involved in stress response, but role is unknown in differentiation.",,,,yes,No known role,21541992
+Hnf4a,,,,,,,,,yes,No known role,
+Nfat5,none,no known effect,none,Other nfat family members have known roles but this one does not. ,,,,,yes,No known role,
+Mycn,none,no known effect,none,,,,,,yes,No known role,
+Zbtb4,none,no known effect,none,,,,,,yes,No known role,
+Egr1,PMID9731053 PMID7565701 PMID7678779,GM,GoF promotes differentiation,Promotes monocyte fate over granulocyte or erythroid. ,,,,,yes,No known role,
+Pou2f2,none,no known effect,none,,,,,,no,Not reviewed,
+Ikzf3,none,no known effect,none,,,,,,no,Not reviewed,
+Bhlhe40,PMID33039338,no known effect,none,There is literature on roles in immune responses but no known roles in myelopoiesis.,,,,,no,Not reviewed,
+Relb,PMID9881974,DC,LoF inhibits lineage,Paper notes both a cell-intrinsic and a secondary effect (in spleen vs thymus),,"Relb has effects on myeloid cells, but the effects are not cell-autonomous.",,,no,Not reviewed,28348230
+Snai3,PMID22531927,no known effect,none,"LoF increases amount of myeloid cells relative to lymphoid, but no effect within the myeloid lineage.",,,,,no,Not reviewed,
+Irf5,none,no known effect,none,There is literature on roles in immune responses but no known roles in myelopoiesis.,,"May affect balance between neutrophils and erythroid lineage, but effect is not cell-autonomous and the work is not on PubMed to cite. DOI10.4049/jimmunol.204.Supp.63.1",,,no,Not reviewed,
+Zic4,none,no known effect,none,,,,,,no,Not reviewed,
+Rarg,PMID9657762,GM,LoF inhibits lineage,First ref discusses reduncancy with Rara: double KO is needed to see the phenotype. Phenotype is granulocyte maturation.,,Effect on erythroipoiesis does not operate in erythroids themselves,,,no,Not reviewed,24383846
+Eomes,none,no known effect,none,,,,,,no,Not reviewed,
