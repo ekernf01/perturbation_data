@@ -220,3 +220,60 @@ for t in ("train", "test", "both", "train_uncorrected"):
     expression_quantified[t].write_h5ad(os.path.join("../perturbations/BETS_A549", f"{t}.h5ad"))
 
 pereggrn_perturbations.check_perturbation_dataset("BETS_A549")
+
+# ### Summary figure: GILZ (TSC22D3) over the glucocorticoid time-course
+#
+# GILZ (official symbol TSC22D3) is the canonical glucocorticoid-induced gene, so it is a natural
+# readout of dexamethasone activity in this dataset. We plot its (log-normalized) expression against
+# timepoint, distinguishing the three kinds of samples recorded in obs["summary"]: the dexamethasone
+# addition time-course, the dexamethasone removal time-course, and the TF-overexpression perturbations.
+# The figure is deliberately small (~1/3 size) so the labels come out relatively large for use as a
+# main-figure panel.
+gilz_adata = expression_quantified["both"]
+_gilz_names = pd.Index(gilz_adata.var_names.astype(str))
+_gilz_gene = next((g for cand in ["TSC22D3", "GILZ"] for g in _gilz_names if g.upper() == cand), None)
+if _gilz_gene is None:
+    print("WARNING: TSC22D3/GILZ not found in BETS_A549 var_names; skipping the GILZ summary figure.")
+else:
+    _gx = gilz_adata[:, _gilz_gene].X
+    _gx = np.asarray(_gx.todense()).ravel() if hasattr(_gx, "todense") else np.asarray(_gx).ravel()
+    _summary = gilz_adata.obs["summary"].astype(str).values
+    _gilz_cat = np.full(len(_summary), "other control", dtype=object)
+    _gilz_cat[_summary == "dexamethasone timecourse"]         = "dex addition"
+    _gilz_cat[_summary == "dexamethasone removal timecourse"] = "dex removal"
+    _gilz_cat[_summary == "Overexpression"]                   = "perturbation"
+    _gilz_df = pd.DataFrame({
+        "expr": _gx,
+        "timepoint": pd.to_numeric(gilz_adata.obs["timepoint"], errors="coerce").values,
+        "category": _gilz_cat,
+    }).dropna(subset=["timepoint"])
+
+    _gilz_label = "TSC22D3 (GILZ)"
+    _gilz_styles = [
+        ("dex addition",  "#C44E52", "o"),
+        ("dex removal",   "#4C72B0", "s"),
+        ("perturbation",  "#55A868", "^"),
+        ("other control", "#999999", "x"),
+    ]
+    _gilz_rng = np.random.default_rng(0)
+    gilz_fig, gilz_ax = plt.subplots(figsize=(3.9, 3.0))
+    for _name, _col, _mk in _gilz_styles:
+        _sub = _gilz_df[_gilz_df["category"] == _name]
+        if not len(_sub):
+            continue
+        _jit = _gilz_rng.normal(0, 0.06, size=len(_sub))
+        gilz_ax.scatter(_sub["timepoint"].values + _jit, _sub["expr"].values, s=9, alpha=0.8,
+                        color=_col, marker=_mk, edgecolor="white", linewidth=0.2, zorder=3,
+                        label=f"{_name} (n={len(_sub)})")
+        if _name in ("dex addition", "dex removal"):  # median trend line for the two time-courses
+            _med = _sub.groupby("timepoint")["expr"].median()
+            gilz_ax.plot(_med.index, _med.values, color=_col, lw=1.0, marker=_mk, ms=2.5, zorder=4)
+    gilz_ax.set_xlabel("timepoint (h)")
+    gilz_ax.set_ylabel(f"{_gilz_label}\n(log-normalized)")
+    gilz_ax.set_title("A549 dex time-course")
+    gilz_ax.legend(frameon=False, fontsize=6, loc="center left", bbox_to_anchor=(1.02, 0.5),
+                   markerscale=0.9, handletextpad=0.3, labelspacing=0.3)
+    gilz_fig.tight_layout()
+    for _ext in ("svg", "pdf"):
+        gilz_fig.savefig(os.path.join(finalDataFileFolder, f"gilz_tsc22d3_timecourse.{_ext}"), bbox_inches="tight")
+    print("Wrote GILZ summary figure to", os.path.join(finalDataFileFolder, "gilz_tsc22d3_timecourse.{svg,pdf}"))
