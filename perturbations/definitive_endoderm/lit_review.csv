@@ -1,4 +1,4 @@
-perturbation,Included in literature review?,PMID,Cell type affected,effect_direction,Notes
+perturbation,Included in literature review,PMID,Cell type affected,effect_direction,Notes
 ARNT,Yes,NA,No known role,none,NA
 ATF5,Yes,NA,No known role,none,NA
 ATF7,Yes,NA,No known role,none,NA
@@ -96,7 +96,7 @@ MIXL1,Yes,PMID9651252 PMID12117810 PMID19038793 https://doi.org/10.1101/2024.03.
 NPAS4,Yes,NA,No known role,none,
 PLSCR1,Yes,NA,No known role,none,
 PRDM13,Yes,NA,No known role,none,
-RFX4,Yes,PMID: 38386071,No known role,none,"GoF has no effect on endoderm diff, although it promotes neuronal differentiation."
+RFX4,Yes,PMID38386071,No known role,none,"GoF has no effect on endoderm diff, although it promotes neuronal differentiation."
 SOX7,Yes,NA,No known role,none,Extra-embryonic endoderm master regulator
 VENTX,Yes,NA,No known role,none,
 ZFPM1,Yes,NA,No known role,none,
@@ -111,5 +111,26 @@ HES4,Yes,NA,No known role,none,
 MYOG,Yes,NA,No known role,none,
 TBPL2,Yes,NA,No known role,none,
 TBX10,Yes,NA,No known role,none,
-TET2,Yes,PMID: 21295276 PMID: 24723429 ,Primitive streak,LoF inhibits differentiation,One study shows that LoF affects the fraction of cells that become mesoderm or endoderm by repressing NANOG. Another sees no effect. 
+TET2,Yes,PMID21295276 PMID24723429 ,Primitive streak,LoF inhibits differentiation,One study shows that LoF affects the fraction of cells that become mesoderm or endoderm by repressing NANOG. Another sees no effect. 
 ZNF439,Yes,NA,No known role,none,
+CEBPG,Yes,NA,No known role,none,
+CREB1,Yes,NA,No known role,none,
+CREM,Yes,NA,No known role,none,
+DNMT1,Yes,PMID39997223,Endoderm,LoF affects expression state,"Large effect on expression state, but does not affect differentiation"
+ETS2,Yes,NA,No known role,none,
+GTF2I,Yes,PMID27534536,Endoderm,LoF inhibits differentiation,
+HHEX,Yes,NA,No known role,none,
+HLX,Yes,NA,No known role,none,
+HMG20A,Yes,NA,No known role,none,
+IRF3,Yes,NA,No known role,none,
+KLF6,Yes,PMID20430021,Endoderm,LoF inhibits differentiation,
+LCORL,Yes,NA,No known role,none,
+PITX2,Yes,PMID11203696,Endoderm,none,
+RBCK1,Yes,NA,No known role,none,
+REST,Yes,NA,No known role,none,
+SP5,Yes,PMID29044119,Endoderm,LoF promotes differentiation,
+TET1,Yes,PMID37456839,Endoderm,LoF promotes differentiation,
+THAP2,Yes,NA,No known role,none,
+ZIC2,Yes,PMID27534536,Endoderm,LoF inhibits differentiation,
+ZNF277,Yes,NA,No known role,none,
+ZNF428,Yes,NA,No known role,none,
